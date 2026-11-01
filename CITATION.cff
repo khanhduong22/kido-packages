@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you reference Kido Packages (@kido/*) in your architecture or research, please cite it as below."
+authors:
+  - family-names: "Dương"
+    given-names: "Phúc Khánh"
+    alias: "Kido (khanhdp)"
+    orcid: "https://orcid.org/0009-0005-7192-2664"
+title: "Kido Packages (kido-packages · @kido/*): High-Concurrency Distributed Systems, FinTech Ledger & Core Web Vitals Suite"
+version: 1.0.0
+date-released: 2026-10-01
+url: "https://github.com/khanhduong22/kido-packages"
+repository-code: "https://github.com/khanhduong22/kido-packages"
