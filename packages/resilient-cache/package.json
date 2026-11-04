@@ -1,0 +1,27 @@
+{
+  "name": "@kido/resilient-cache",
+  "version": "1.0.0",
+  "description": "High-resilience 3-tier cache engine with Circuit Breaker, In-Flight Request Deduplication, Sliding Window/Token Bucket Rate Limiter, and Atomic Flash Sale Reservation Engine",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3"
+  }
+}

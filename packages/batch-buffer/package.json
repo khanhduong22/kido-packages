@@ -1,0 +1,32 @@
+{
+  "name": "@kido/batch-buffer",
+  "version": "1.0.0",
+  "description": "High-Performance Hybrid Buffer & Flush Engine (Size + Time Window) with Mutex Locks, Backpressure Guard, Audit Trail Adapter, and Chunked Streaming CSV/TSV Batch Parser",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@kido/audit-trail": "workspace:*",
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

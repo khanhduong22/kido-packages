@@ -11,7 +11,11 @@
 
 **Kido Packages (`kido-packages` · `@kido/*`)** is an ecosystem of **35+ cohesive domain combo suites** designed for high-concurrency production workloads: distributed database sharding (DDIA Ch.6), Valkey/Redis Singleflight stampede protection, double-entry financial ledgers, cryptographic hash-chain audit trails, and zero-TBT (`0ms Total Blocking Time`) frontend telemetry.
 
-> **Architecture Registry & IP Notice:** This public repository serves as the **Canonical Architecture Specification, Slice Registry, and Benchmark Index** for the `@kido/*` ecosystem cited in ORCID (`0009-0005-7192-2664`) and technical monographs on [`blog.khanhdp.com`](https://blog.khanhdp.com).
+> [!IMPORTANT]
+> **🔒 Open-Core Governance & Proprietary IP Boundary**
+> To protect core commercial intellectual property and honor enterprise client NDAs, `@kido/*` follows a strict **Two-Tier Open-Core Architecture**:
+> 1. **Public Open-Core Foundation (`packages/*` — Full Source Included Here)**: We open-source **6 foundational, general-purpose infrastructure & Core Web Vitals suites** (`@kido/resilient-cache`, `@kido/batch-buffer`, `@kido/event-bus`, `@kido/spa-version-guard`, `@kido/traffic-attribution`, `@kido/sitemap-incremental`) complete with zero-dependency TypeScript slices and unit test suites.
+> 2. **Private Enterprise Vault (`khanhdp-labs/kido-packages` — Proprietary IP)**: High-stakes domain cores — including Double-Entry Escrow & FX Settlement Ledgers (`@kido/wallet-ledger`), Circular 78 Tax E-Invoice Cryptographic Signers (`@kido/einvoice-vn`), Multi-Tenant RLS Query Interceptors (`@kido/tenant-guard`), and Algorithmic Flash-Sale / Anti-Fraud Engines — remain proprietary trade secrets inside Kido Labs' private vault. Their architectural contracts and slice boundaries are documented in the registry below for reference and architectural auditing.
 
 ---
 
