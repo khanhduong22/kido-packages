@@ -6,6 +6,8 @@
   "description": "High-Concurrency Benchmark Harness & k6 Load & Stress Test Suite for @kido/* Packages",
   "scripts": {
     "server": "node server/stress-target-server.ts",
-    "bench": "node run-suite.mjs"
+    "bench": "node run-suite.mjs",
+    "k6:full": "k6 run k6/full-suite-37-packages.k6.js",
+    "k6:counter": "k6 run k6/hot-counter-stress.k6.js"
   }
 }

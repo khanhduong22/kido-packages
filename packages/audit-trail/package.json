@@ -23,7 +23,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx src/index.test.ts src/partition-archiver.test.ts src/api-audit/index.test.ts"
+    "test": "tsx --test src/index.test.ts src/partition-archiver.test.ts src/api-audit/index.test.ts"
   },
   "dependencies": {
     "hono": "^4.7.0",

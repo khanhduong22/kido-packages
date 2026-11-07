@@ -3,22 +3,61 @@
  * @description Zero-dependency Node.js (node:http) high-concurrency benchmark server
  * backed by @kido/* production algorithms:
  *
- * 1. POST /naive/hot-counter: Row-lock serial contention (UPDATE ... SET count = count + 1)
- * 2. POST /tier0-sme/hot-counter: In-memory micro-batch coalescing (Tier-0 SME Zero-Infra)
- * 3. POST /tier2-bigtech/hot-counter: Atomic Valkey/Lua write-behind + 16-slot sharded counter (Tier-2 Big-Tech)
- * 4. GET /naive/read-replica: 9 x Read Replica Tier S at 100% saturation (rho = 1.0) with Little's Law queue explosion
- * 5. GET /tier1/read-replica: 10 x Read Replica Tier S at 90% utilization (rho = 0.90) keeping 3-query latency < 200ms
- * 6. GET /naive/cache-stampede vs GET /tier2/singleflight-cache: 1,000 concurrent misses vs 1 origin DB query
- * 7. GET /metrics: JSON telemetry summary (queries, write reduction %, p50/p95/p99)
- * 8. POST /reset: Clean state reset
+ * 1. Infrastructure:
+ *    - POST /naive/hot-counter: Row-lock serial contention (UPDATE ... SET count = count + 1)
+ *    - POST /tier0-sme/hot-counter: In-memory micro-batch coalescing (Tier-0 SME Zero-Infra)
+ *    - POST /tier2-bigtech/hot-counter: Atomic Valkey/Lua write-behind + 16-slot sharded counter (Tier-2 Big-Tech)
+ *    - GET  /naive/read-replica: 9 x Read Replica Tier S at 100% saturation (rho = 1.0) with Little's Law queue explosion
+ *    - GET  /tier1/read-replica: 10 x Read Replica Tier S at 90% utilization (rho = 0.90) keeping 3-query latency < 200ms
+ *    - GET  /naive/cache-stampede vs GET /tier2/singleflight-cache: 1,000 concurrent misses vs 1 origin DB query
+ *
+ * 2. Security:
+ *    - POST /benchmark/security/anti-spam: 64-bit SimHash deduplication & Hamming distance check
+ *    - POST /benchmark/security/audit-trail: SHA-256 cryptographic hash-chain block creation & verification
+ *    - POST /benchmark/security/tenant-guard: Multi-tenant RLS query filter injection & isolation assert
+ *
+ * 3. FinTech:
+ *    - POST /benchmark/fintech/wallet-ledger: Double-entry ledger movement & WACB portfolio accounting
+ *    - POST /benchmark/fintech/payment-vietqr: EMVCo QR code payload generation & CRC16-CCITT checksum
+ *
+ * 4. E-Commerce:
+ *    - POST /benchmark/ecommerce/discount-loyalty: Dynamic voucher calculation & member tier evaluation
+ *    - POST /benchmark/ecommerce/bundle-pricing: Multi-variant tiered bundle pricing evaluation
+ *
+ * 5. Logistics:
+ *    - POST /benchmark/logistics/bom-inventory: Recipe BOM explosion & S-shape 2-Opt TSP warehouse routing
+ *    - POST /benchmark/logistics/geocoding-routing: Vincenty ellipsoid geofence & Haversine distance
+ *
+ * 6. Telemetry & Control:
+ *    - GET  /metrics: Multi-domain telemetry summary (latencies, throughput, reductions)
+ *    - POST /reset: Clean state reset across all domains
  */
 
 import http from "node:http";
 import { pathToFileURL } from "node:url";
+
+// Infrastructure Domain
 import { MicroBatchCoalescer } from "../../packages/hot-counter/src/micro-batch-coalescer.ts";
 import { ValkeyWriteBehindCounter, InMemoryValkeySimulator } from "../../packages/hot-counter/src/valkey-write-behind.ts";
 import { SlottedCounter, InMemorySlottedCounter, murmurhash3_32 } from "../../packages/hot-counter/src/slotted-counter.ts";
 import { InFlightManager, SingleFlightSwr } from "../../packages/resilient-cache/src/in-flight.ts";
+
+// Security Domain
+import { computeSimHash, hammingDistance } from "../../packages/anti-spam/dist/index.mjs";
+import { computeEntryHash, createAuditEntry, verifyChainIntegrity, GENESIS_HASH } from "../../packages/audit-trail/dist/index.mjs";
+import { buildTenantWhereClause, assertTenantIsolation } from "../../packages/tenant-guard/dist/index.mjs";
+
+// FinTech Domain
+import { WalletLedger, executeWacbTransaction } from "../../packages/wallet-ledger/dist/index.mjs";
+import { generateVietQrEmvco, crc16Ccitt } from "../../packages/payment-vietqr/dist/index.mjs";
+
+// E-Commerce Domain
+import { calculateVoucherDiscount, determineMemberTier } from "../../packages/discount-loyalty/dist/index.mjs";
+import { calculateBundlePricing } from "../../packages/bundle-pricing/dist/index.js";
+
+// Logistics Domain
+import { optimizeSshape2OptRoute, RecipeCatalog, explodeBOM, DEFAULT_FNB_RECIPES } from "../../packages/bom-inventory/dist/index.mjs";
+import { vincentyDistance, haversineDistance } from "../../packages/geocoding-routing/dist/index.mjs";
 
 export interface LatencyStats {
   count: number;
@@ -97,6 +136,17 @@ class RowLockMutex {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+function readRequestBody(req: http.IncomingMessage): Promise<string> {
+  return new Promise((resolve) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", () => resolve(body));
+    req.on("error", () => resolve(""));
+  });
+}
+
 export function createBenchmarkServer() {
   const startTime = Date.now();
 
@@ -167,6 +217,41 @@ export function createBenchmarkServer() {
   const singleflightLatencies = new LatencyHistogram();
   const singleFlight = new SingleFlightSwr();
 
+  // 7. Security domain state
+  let antiSpamRequests = 0;
+  const antiSpamLatencies = new LatencyHistogram();
+  const refSimhash = computeSimHash("Khuyen mai cuc soc giam gia 50% hom nay");
+
+  let auditTrailRequests = 0;
+  let lastAuditHash = GENESIS_HASH;
+  const auditTrailLatencies = new LatencyHistogram();
+
+  let tenantGuardRequests = 0;
+  const tenantGuardLatencies = new LatencyHistogram();
+
+  // 8. FinTech domain state
+  let walletLedgerRequests = 0;
+  const walletLedger = new WalletLedger();
+  const walletLedgerLatencies = new LatencyHistogram();
+
+  let vietqrRequests = 0;
+  const vietqrLatencies = new LatencyHistogram();
+
+  // 9. E-Commerce domain state
+  let discountRequests = 0;
+  const discountLatencies = new LatencyHistogram();
+
+  let bundleRequests = 0;
+  const bundleLatencies = new LatencyHistogram();
+
+  // 10. Logistics domain state
+  let bomRequests = 0;
+  const bomRecipeCatalog = new RecipeCatalog(DEFAULT_FNB_RECIPES);
+  const bomLatencies = new LatencyHistogram();
+
+  let geocodingRequests = 0;
+  const geocodingLatencies = new LatencyHistogram();
+
   const resetAll = () => {
     rowMutex.reset();
     naiveCounter = 0;
@@ -199,6 +284,35 @@ export function createBenchmarkServer() {
     singleflightDbQueries = 0;
     singleflightLatencies.reset();
     singleFlight.clear();
+
+    antiSpamRequests = 0;
+    antiSpamLatencies.reset();
+
+    auditTrailRequests = 0;
+    lastAuditHash = GENESIS_HASH;
+    auditTrailLatencies.reset();
+
+    tenantGuardRequests = 0;
+    tenantGuardLatencies.reset();
+
+    walletLedgerRequests = 0;
+    walletLedger.clear();
+    walletLedgerLatencies.reset();
+
+    vietqrRequests = 0;
+    vietqrLatencies.reset();
+
+    discountRequests = 0;
+    discountLatencies.reset();
+
+    bundleRequests = 0;
+    bundleLatencies.reset();
+
+    bomRequests = 0;
+    bomLatencies.reset();
+
+    geocodingRequests = 0;
+    geocodingLatencies.reset();
   };
 
   const getMetrics = () => {
@@ -271,6 +385,50 @@ export function createBenchmarkServer() {
           latencies: singleflightLatencies.getStats(),
         },
       },
+      security: {
+        antiSpam: {
+          requests: antiSpamRequests,
+          latencies: antiSpamLatencies.getStats(),
+        },
+        auditTrail: {
+          requests: auditTrailRequests,
+          latencies: auditTrailLatencies.getStats(),
+        },
+        tenantGuard: {
+          requests: tenantGuardRequests,
+          latencies: tenantGuardLatencies.getStats(),
+        },
+      },
+      fintech: {
+        walletLedger: {
+          requests: walletLedgerRequests,
+          latencies: walletLedgerLatencies.getStats(),
+        },
+        paymentVietqr: {
+          requests: vietqrRequests,
+          latencies: vietqrLatencies.getStats(),
+        },
+      },
+      ecommerce: {
+        discountLoyalty: {
+          requests: discountRequests,
+          latencies: discountLatencies.getStats(),
+        },
+        bundlePricing: {
+          requests: bundleRequests,
+          latencies: bundleLatencies.getStats(),
+        },
+      },
+      logistics: {
+        bomInventory: {
+          requests: bomRequests,
+          latencies: bomLatencies.getStats(),
+        },
+        geocodingRouting: {
+          requests: geocodingRequests,
+          latencies: geocodingLatencies.getStats(),
+        },
+      },
     };
   };
 
@@ -299,12 +457,15 @@ export function createBenchmarkServer() {
       return;
     }
 
-    // --- 1. POST /naive/hot-counter ---
+    // =========================================================================
+    // 1. INFRASTRUCTURE ENDPOINTS
+    // =========================================================================
+
+    // --- 1A. POST /naive/hot-counter ---
     if (method === "POST" && pathname === "/naive/hot-counter") {
       const start = performance.now();
       naiveRequests++;
 
-      // Simulates row tuple lock queueing + WAL write
       await rowMutex.acquire();
       try {
         await sleep(0.5); // Simulated disk WAL flush + tuple lock hold
@@ -326,12 +487,11 @@ export function createBenchmarkServer() {
       });
     }
 
-    // --- 2. POST /tier0-sme/hot-counter ---
+    // --- 1B. POST /tier0-sme/hot-counter ---
     if (method === "POST" && pathname === "/tier0-sme/hot-counter") {
       const start = performance.now();
       smeRequests++;
 
-      // In-memory micro-batch coalescing
       coalescer.record("hot-product-sku-1", 1);
 
       const elapsed = performance.now() - start;
@@ -346,7 +506,7 @@ export function createBenchmarkServer() {
       });
     }
 
-    // --- 3. POST /tier2-bigtech/hot-counter ---
+    // --- 1C. POST /tier2-bigtech/hot-counter ---
     if (method === "POST" && pathname === "/tier2-bigtech/hot-counter") {
       const start = performance.now();
       bigtechRequests++;
@@ -355,11 +515,8 @@ export function createBenchmarkServer() {
         (req.headers["x-caller-id"] as string) ||
         `vu-${Math.floor(Math.random() * 10000)}`;
 
-      // 16-slot sharded hashing
       const slotId = murmurhash3_32(callerId) % 16;
       slottedSim.increment("product", "hot-product-sku-1", callerId, 1);
-
-      // Atomic Valkey/Lua write-behind buffer
       await valkeyCounter.increment("hot-product-sku-1", 1);
 
       const elapsed = performance.now() - start;
@@ -374,15 +531,11 @@ export function createBenchmarkServer() {
       });
     }
 
-    // --- 4. GET /naive/read-replica ---
-    // Simulates 9 x Read Replica Tier S at 100% saturation (rho = 1.0)
-    // 3 sequential SQL queries per page read -> Little's Law 1/(1-rho) queue blowup
+    // --- 1D. GET /naive/read-replica ---
     if (method === "GET" && pathname === "/naive/read-replica") {
       const start = performance.now();
       naiveReplicaRequests++;
 
-      // In a saturated rho = 1.0 queue, delay per query explodes due to zero headroom
-      // Base service time: 2.0ms. Queue factor: ~60x - 90x
       const jitter = 0.85 + Math.random() * 0.3;
       const queueDelayPerQuery = 2.0 * 65.0 * jitter; // ~130ms queue wait per query
       const queryDurationMs = 2.0 + queueDelayPerQuery; // ~132ms
@@ -402,14 +555,11 @@ export function createBenchmarkServer() {
       });
     }
 
-    // --- 5. GET /tier1/read-replica ---
-    // Simulates 10 x Read Replica Tier S at 90% utilization (rho = 0.90)
-    // 10% headroom absorbs bursts -> keeping 3-query latency well under 200ms
+    // --- 1E. GET /tier1/read-replica ---
     if (method === "GET" && pathname === "/tier1/read-replica") {
       const start = performance.now();
       tier1ReplicaRequests++;
 
-      // Queuing delay for rho = 0.90 is strictly bounded: rho / (1 - rho) = 9.0x
       const jitter = 0.85 + Math.random() * 0.3;
       const queueDelayPerQuery = 2.0 * 9.0 * jitter; // ~18ms queue wait per query
       const queryDurationMs = 2.0 + queueDelayPerQuery; // ~20ms
@@ -429,13 +579,11 @@ export function createBenchmarkServer() {
       });
     }
 
-    // --- 6. GET /naive/cache-stampede ---
-    // Every concurrent miss executes an independent origin DB query
+    // --- 1F. GET /naive/cache-stampede ---
     if (method === "GET" && pathname === "/naive/cache-stampede") {
       const start = performance.now();
       naiveStampedeRequests++;
 
-      // Origin DB query (simulated 25ms uncoalesced load)
       await sleep(25);
       naiveStampedeDbQueries++;
 
@@ -450,13 +598,11 @@ export function createBenchmarkServer() {
       });
     }
 
-    // --- 6. GET /tier2/singleflight-cache ---
-    // 1,000 concurrent misses collapsed into 1 single origin DB query
+    // --- 1G. GET /tier2/singleflight-cache ---
     if (method === "GET" && pathname === "/tier2/singleflight-cache") {
       const start = performance.now();
       singleflightRequests++;
 
-      // Coalesces all in-flight callers into 1 single execution with SWR/TTL caching
       const data = await singleFlight.execute("product:black-friday-deal", async () => {
         await sleep(25);
         singleflightDbQueries++;
@@ -475,12 +621,310 @@ export function createBenchmarkServer() {
       });
     }
 
-    // --- 7. GET /metrics ---
+    // =========================================================================
+    // 2. SECURITY DOMAIN ENDPOINTS
+    // =========================================================================
+
+    // --- 2A. POST /benchmark/security/anti-spam ---
+    if (method === "POST" && pathname === "/benchmark/security/anti-spam") {
+      const start = performance.now();
+      antiSpamRequests++;
+
+      const bodyStr = await readRequestBody(req);
+      let text = "Khuyến mãi cực sốc giảm giá 50% mua ngay hôm nay";
+      try {
+        if (bodyStr) {
+          const parsed = JSON.parse(bodyStr);
+          if (parsed.text) text = parsed.text;
+        }
+      } catch {}
+
+      const simhash = computeSimHash(text);
+      const distance = hammingDistance(simhash, refSimhash);
+      const isNearDuplicate = distance <= 5;
+
+      const elapsed = performance.now() - start;
+      antiSpamLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "security",
+        operation: "simhash-dedupe",
+        simhash,
+        distance,
+        isNearDuplicate,
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // --- 2B. POST /benchmark/security/audit-trail ---
+    if (method === "POST" && pathname === "/benchmark/security/audit-trail") {
+      const start = performance.now();
+      auditTrailRequests++;
+
+      const entry = createAuditEntry({
+        action: "ORDER_CREATED",
+        actor: { userId: `user-${(auditTrailRequests % 50) + 1}` },
+        resource: { type: "order", id: `order-${auditTrailRequests}` },
+        details: { amount: 1500000, itemsCount: 3 },
+      }, lastAuditHash);
+
+      lastAuditHash = computeEntryHash(entry, lastAuditHash);
+
+      const elapsed = performance.now() - start;
+      auditTrailLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "security",
+        operation: "sha256-hashchain",
+        hash: lastAuditHash,
+        entryIndex: auditTrailRequests,
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // --- 2C. POST /benchmark/security/tenant-guard ---
+    if (method === "POST" && pathname === "/benchmark/security/tenant-guard") {
+      const start = performance.now();
+      tenantGuardRequests++;
+
+      const tenantId = `tenant-${(tenantGuardRequests % 20) + 1}`;
+      const where = buildTenantWhereClause({ tenantId });
+      assertTenantIsolation({ tenantId }, { tenantId });
+
+      const elapsed = performance.now() - start;
+      tenantGuardLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "security",
+        operation: "rls-filter-injection",
+        tenantId,
+        whereClause: where.clause,
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // =========================================================================
+    // 3. FINTECH DOMAIN ENDPOINTS
+    // =========================================================================
+
+    // --- 3A. POST /benchmark/fintech/wallet-ledger ---
+    if (method === "POST" && pathname === "/benchmark/fintech/wallet-ledger") {
+      const start = performance.now();
+      walletLedgerRequests++;
+
+      const walletId = `wallet-${(walletLedgerRequests % 20) + 1}`;
+      if (!walletLedger.getWallet(walletId)) {
+        walletLedger.createWallet(walletId, `user-${walletId}`);
+      }
+
+      walletLedger.creditUseAccount({
+        walletId,
+        amount: 10000,
+        idempotencyKey: `tx-${walletLedgerRequests}-${Date.now()}`,
+        description: "Benchmark balance credit",
+      });
+
+      const portfolioState = executeWacbTransaction(
+        { holdings: [], realizedPnl: [], cashBalance: 50000000 },
+        {
+          symbol: "VNM",
+          side: "BUY",
+          quantity: 10,
+          price: 135000,
+          fee: 500,
+          transactedAt: new Date().toISOString(),
+        }
+      );
+
+      const elapsed = performance.now() - start;
+      walletLedgerLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "fintech",
+        operation: "double-entry-ledger-and-wacb",
+        walletId,
+        balance: walletLedger.getWallet(walletId)?.useAccount.available,
+        holdingsCount: portfolioState.holdings.length,
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // --- 3B. POST /benchmark/fintech/payment-vietqr ---
+    if (method === "POST" && pathname === "/benchmark/fintech/payment-vietqr") {
+      const start = performance.now();
+      vietqrRequests++;
+
+      const emvcoPayload = generateVietQrEmvco({
+        bank: "970422", // MBBank
+        accountNumber: "09012345678",
+        accountName: "KIDO PACKAGES",
+        amount: 500000,
+        description: `ORDER ${vietqrRequests}`,
+      });
+      const crc = crc16Ccitt(emvcoPayload);
+
+      const elapsed = performance.now() - start;
+      vietqrLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "fintech",
+        operation: "vietqr-emvco-crc16",
+        payloadLength: emvcoPayload.length,
+        crc,
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // =========================================================================
+    // 4. E-COMMERCE DOMAIN ENDPOINTS
+    // =========================================================================
+
+    // --- 4A. POST /benchmark/ecommerce/discount-loyalty ---
+    if (method === "POST" && pathname === "/benchmark/ecommerce/discount-loyalty") {
+      const start = performance.now();
+      discountRequests++;
+
+      const voucherResult = calculateVoucherDiscount(
+        {
+          id: "v-super-sale",
+          code: "SUPERSALE20",
+          name: "Flash Super Sale 20%",
+          type: "PERCENTAGE",
+          value: 20,
+          minOrderValue: 100000,
+          isActive: true,
+        },
+        {
+          subtotal: 500000,
+          items: [{ id: "item-101", name: "Premium Polo", price: 250000, quantity: 2 }],
+        }
+      );
+
+      const memberTier = determineMemberTier(2500000);
+
+      const elapsed = performance.now() - start;
+      discountLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "ecommerce",
+        operation: "voucher-discount-and-tier",
+        discountAmount: voucherResult.discountAmount,
+        finalTotal: voucherResult.finalTotal,
+        memberTier,
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // --- 4B. POST /benchmark/ecommerce/bundle-pricing ---
+    if (method === "POST" && pathname === "/benchmark/ecommerce/bundle-pricing") {
+      const start = performance.now();
+      bundleRequests++;
+
+      const bundleResult = calculateBundlePricing(
+        {
+          id: "bundle-tier-3",
+          name: "Buy 3 Save 30%",
+          quantity: 3,
+          discountPercent: 30,
+          basePricePerUnit: 150000,
+        },
+        {
+          slots: [
+            { variantId: "var-1", quantity: 1, unitPrice: 150000 },
+            { variantId: "var-2", quantity: 1, unitPrice: 150000 },
+            { variantId: "var-3", quantity: 1, unitPrice: 150000 },
+          ],
+        }
+      );
+
+      const elapsed = performance.now() - start;
+      bundleLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "ecommerce",
+        operation: "bundle-pricing-tier",
+        finalPrice: bundleResult.finalBundlePrice,
+        savings: bundleResult.totalSavings,
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // =========================================================================
+    // 5. LOGISTICS DOMAIN ENDPOINTS
+    // =========================================================================
+
+    // --- 5A. POST /benchmark/logistics/bom-inventory ---
+    if (method === "POST" && pathname === "/benchmark/logistics/bom-inventory") {
+      const start = performance.now();
+      bomRequests++;
+
+      const exploded = explodeBOM(
+        "RECIPE-TRA-DAO-CAM-SA",
+        50,
+        bomRecipeCatalog,
+        { includeWaste: true }
+      );
+
+      const route = optimizeSshape2OptRoute([
+        { sku: "BB-LY-PP-500", binLocation: "WH-01-01-01-01", quantity: 50 },
+        { sku: "NVL-SIRO-DAO", binLocation: "WH-02-01-01-02", quantity: 2500 },
+        { sku: "BB-NAP-KIM-CUONG", binLocation: "WH-01-02-01-01", quantity: 50 },
+      ]);
+
+      const elapsed = performance.now() - start;
+      bomLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "logistics",
+        operation: "bom-explosion-and-2opt-tsp",
+        rawMaterialsCount: exploded.rawMaterials.length,
+        routeStopsCount: route.stops.length,
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // --- 5B. POST /benchmark/logistics/geocoding-routing ---
+    if (method === "POST" && pathname === "/benchmark/logistics/geocoding-routing") {
+      const start = performance.now();
+      geocodingRequests++;
+
+      const origin = { latitude: 16.0544, longitude: 108.2022 };
+      const destination = { latitude: 15.8801, longitude: 108.3380 };
+
+      const havDistanceKm = haversineDistance(origin, destination);
+      const vincDistanceM = vincentyDistance(origin, destination);
+
+      const elapsed = performance.now() - start;
+      geocodingLatencies.record(elapsed);
+
+      return json(200, {
+        status: "ok",
+        domain: "logistics",
+        operation: "vincenty-and-haversine",
+        haversineKm: Number(havDistanceKm.toFixed(2)),
+        vincentyMeters: Number(vincDistanceM.toFixed(1)),
+        latencyMs: Number(elapsed.toFixed(2)),
+      });
+    }
+
+    // =========================================================================
+    // 6. TELEMETRY & SERVER CONTROL
+    // =========================================================================
+
+    // --- 6A. GET /metrics ---
     if (method === "GET" && pathname === "/metrics") {
       return json(200, getMetrics());
     }
 
-    // --- 8. POST /reset ---
+    // --- 6B. POST /reset ---
     if (method === "POST" && pathname === "/reset") {
       resetAll();
       return json(200, { status: "reset_ok", timestamp: Date.now() });
@@ -524,15 +968,30 @@ if (isDirectCli) {
   benchServer.start(port).then((actualPort) => {
     console.log(`[stress-target-server] Running on http://127.0.0.1:${actualPort}`);
     console.log(`Endpoints:`);
-    console.log(`  POST /naive/hot-counter`);
-    console.log(`  POST /tier0-sme/hot-counter`);
-    console.log(`  POST /tier2-bigtech/hot-counter`);
-    console.log(`  GET  /naive/read-replica`);
-    console.log(`  GET  /tier1/read-replica`);
-    console.log(`  GET  /naive/cache-stampede`);
-    console.log(`  GET  /tier2/singleflight-cache`);
-    console.log(`  GET  /metrics`);
-    console.log(`  POST /reset`);
+    console.log(`  Infrastructure:`);
+    console.log(`    POST /naive/hot-counter`);
+    console.log(`    POST /tier0-sme/hot-counter`);
+    console.log(`    POST /tier2-bigtech/hot-counter`);
+    console.log(`    GET  /naive/read-replica`);
+    console.log(`    GET  /tier1/read-replica`);
+    console.log(`    GET  /naive/cache-stampede`);
+    console.log(`    GET  /tier2/singleflight-cache`);
+    console.log(`  Security:`);
+    console.log(`    POST /benchmark/security/anti-spam`);
+    console.log(`    POST /benchmark/security/audit-trail`);
+    console.log(`    POST /benchmark/security/tenant-guard`);
+    console.log(`  FinTech:`);
+    console.log(`    POST /benchmark/fintech/wallet-ledger`);
+    console.log(`    POST /benchmark/fintech/payment-vietqr`);
+    console.log(`  E-Commerce:`);
+    console.log(`    POST /benchmark/ecommerce/discount-loyalty`);
+    console.log(`    POST /benchmark/ecommerce/bundle-pricing`);
+    console.log(`  Logistics:`);
+    console.log(`    POST /benchmark/logistics/bom-inventory`);
+    console.log(`    POST /benchmark/logistics/geocoding-routing`);
+    console.log(`  Telemetry:`);
+    console.log(`    GET  /metrics`);
+    console.log(`    POST /reset`);
   });
 
   process.on("SIGINT", async () => {

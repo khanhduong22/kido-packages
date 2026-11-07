@@ -35,7 +35,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx src/index.test.ts src/team-rbac/index.test.ts src/snapshot/index.test.ts src/sandbox/index.test.ts"
+    "test": "tsx --test src/index.test.ts src/team-rbac/index.test.ts src/snapshot/index.test.ts src/sandbox/index.test.ts"
   },
   "dependencies": {
     "zod": "^3.24.2"

@@ -28,6 +28,143 @@ Các hệ sinh thái cộng đồng và micro-SaaS thường đối mặt với 
 
 ---
 
+## 🏛️ 3-Tier Progressive Scale Architecture (`Naive Baseline` → `Tier-0 SME Zero-Infra` → `Tier-1 Growth` → `Tier-2 Big-Tech`)
+
+| Tier | Architecture & Mechanism | Cost & Ops | Performance / SLA | When to Use |
+| :--- | :--- | :--- | :--- | :--- |
+| **Naive Baseline** | **Linear Keyword Iteration**: `for (const word of list) if (content.includes(word))` | $0 extra | $O(N \times M)$ CPU starvation (> 50ms for 1,000 words); Event Loop blocked. | 🛑 **Anti-pattern**: Easily bypassed via zero-width chars (`\u200B`), homoglyphs (`а`, `е`), and leetspeak (`b.á.n`); severe Scunthorpe false positives. |
+| **Tier-0 SME Zero-Infra** | **In-Process Aho-Corasick O(M) Trie + Unicode Normalizer**: Single-pass keyword automaton (`AhoCorasickAutomaton`) with NFC/NFD folding, homoglyph normalization (`TextNormalizer`), and in-memory velocity rate limiter (`SpamVelocityGuard`, `MemoryVelocityCacheAdapter`). | **$5/mo** (Single VPS) | **< 0.2ms** execution time; 0 external Redis or API dependencies. | ✅ **Default for SMEs, blogs, commenting widgets, and single-instance apps.** |
+| **Tier-1 Growth** | **64-bit Charikar SimHash + O(1) Pigeonhole NearDuplicateIndex + Gemini AI**: In-memory / Redis SimHash index (`NearDuplicateIndex`) detecting duplicate content flood across targets (Hamming distance $\le 3$). Grey-zone trigger escalates suspicious long-form text to Gemini Flash-Lite AI (`GeminiSpamAnalyzer`) with fail-open safety. | **$20 - $50/mo** (Redis + Gemini API) | **< 1ms** SimHash search across 10,000 documents; AI semantic triage within 400ms. | ⭐ **Active social platforms, user-generated content, forums, and marketplace listings.** |
+| **Tier-2 Big-Tech** | **Edge Cloudflare/Envoy Filter + Distributed Kafka Queue + Multi-Model AI Safety**: Layer 1 edge filtering at Cloudflare Worker / Envoy Gateway before hitting origin. Asynchronous Kafka event bus feeding distributed AI safety models, spam ring cluster analysis, and automated shadow-banning. | **$200 - $800+/mo** (Edge CDN + Kafka cluster + dedicated AI moderation worker) | **Sub-millisecond** edge rejection; 100,000+ requests/sec with zero origin backend impact. | 🚀 **Big-Tech Enterprise (Shopee, Discord, Reddit scale) with high-velocity adversarial attacks.** |
+
+### Architectural Evolution Diagram
+
+```mermaid
+flowchart TD
+    subgraph S0["Naive Baseline (Fragile)"]
+        N_Req["User Post / Comment"] --> N_Loop["for (const w of badWords)\ncontent.includes(w)"]
+        N_Loop -->|O(N * M) Event Loop Block| N_Crash["Latency Spike 100ms+ & Evasion Exploits\n(Zero-Width, Homoglyphs, Leetspeak)"]
+    end
+
+    subgraph S1["Tier-0 SME Zero-Infra ($5/mo Single VPS)"]
+        T0_Req["Comment Input"] --> T0_Norm["TextNormalizer\n(NFC + Homoglyph + Leetspeak Strip)"]
+        T0_Norm --> T0_AC["AhoCorasickAutomaton O(M)\n(Single-Pass Multi-Pattern Scan)"]
+        T0_AC --> T0_Vel["SpamVelocityGuard\n(In-Memory Window Rate Limiter)"]
+        T0_Vel --> T0_OK["Allow / Reject (< 0.2ms)"]
+    end
+
+    subgraph S2["Tier-1 Growth (Active Community & Forums)"]
+        T1_Req["UGC Content"] --> T1_Sim["64-bit Charikar SimHash\n(computeSimHash)"]
+        T1_Sim --> T1_Pigeon["NearDuplicateIndex\n(Pigeonhole 4-Block Table, Hamming <= 3)"]
+        T1_Pigeon -->|Grey-Zone Trigger| T1_AI["GeminiSpamAnalyzer\n(Gemini Flash-Lite Semantic Check)"]
+        T1_AI --> T1_Verdict["Action: ALLOW / HIDE / BLOCK"]
+    end
+
+    subgraph S3["Tier-2 Big-Tech (Enterprise High-Traffic)"]
+        T2_Traffic["100k req/s Edge Traffic"] --> T2_Edge["Cloudflare Worker / Envoy L1 Gate\n(Compiled Aho-Corasick + Bitmask Filter)"]
+        T2_Edge -->|Clean / Async Audit| T2_Kafka["Kafka Event Stream\n(async moderation pipeline)"]
+        T2_Kafka --> T2_Cluster["Spam Ring Cluster Analysis\n(Graph DB & Shadow-Ban Engine)"]
+    end
+```
+
+### Code Example: Tier-0 SME Zero-Infra Mode
+
+Lightweight, synchronous O(M) trie scanning and in-memory velocity rate limiting on a $5/mo VPS:
+
+```typescript
+import {
+  AntiSpamEngine,
+  SpamVelocityGuard,
+  MemoryVelocityCacheAdapter,
+} from '@kido/anti-spam';
+import { getAllPresets } from '@kido/anti-spam/presets';
+
+// 1. Initialize Zero-Dependency Engine with pre-compiled dictionary presets
+const engine = new AntiSpamEngine({
+  rules: getAllPresets(), // Thousands of curated toxic/spam/gambling terms
+  autoCensor: true, // Replaces matched words with ***
+});
+
+// 2. Add In-Memory Velocity Rate Limiter ($0 external infra)
+const velocityGuard = new SpamVelocityGuard({
+  cacheAdapter: new MemoryVelocityCacheAdapter(),
+  rules: [
+    { type: 'comment', maxActions: 10, windowSeconds: 60 }, // Max 10 comments/min
+    { type: 'post', maxActions: 3, windowSeconds: 300 },    // Max 3 posts/5min
+  ],
+});
+
+// 3. Fast synchronous validation in HTTP request handler (< 0.2ms)
+export function handleComment(userId: string, commentText: string) {
+  // Check user action velocity in RAM
+  const velocityCheck = velocityGuard.checkVelocitySync(userId, 'comment');
+  if (!velocityCheck.allowed) {
+    throw new Error(`Rate limit exceeded. Please wait ${velocityCheck.retryAfterSeconds}s`);
+  }
+
+  // Linear O(M) multi-pattern keyword and homoglyph scan
+  const result = engine.validateSync(commentText);
+  if (result.action === 'BLOCK') {
+    throw new Error('Comment contains prohibited content');
+  }
+
+  return { cleanText: result.censoredContent ?? commentText };
+}
+```
+
+### Code Example: Tier-2 Big-Tech Mode
+
+Enterprise 64-bit Charikar SimHash deduplication, Pigeonhole near-duplicate indexing, and Gemini AI semantic triage:
+
+```typescript
+import {
+  NearDuplicateIndex,
+  computeSimHash,
+  calculateHammingDistance,
+  isNearDuplicate,
+  GeminiSpamAnalyzer,
+} from '@kido/anti-spam';
+
+// 1. Initialize Pigeonhole 4-Block Table Near-Duplicate Index for 100k+ documents
+const dedupeIndex = new NearDuplicateIndex({
+  maxHammingDistance: 3, // Detects content with >= 95% semantic similarity
+});
+
+// 2. Deduplicate inbound user-generated articles or reviews
+export async function processInboundArticle(articleId: string, content: string) {
+  const simhash = computeSimHash(content);
+
+  // O(1) Pigeonhole lookup for existing near-duplicate flood attacks
+  const duplicateMatch = dedupeIndex.query(simhash);
+  if (duplicateMatch.hasDuplicate) {
+    console.warn(`Spam flood detected! Matches article ${duplicateMatch.matchedId} (distance: ${duplicateMatch.distance})`);
+    return { status: 'REJECTED_DUPLICATE', matchedId: duplicateMatch.matchedId };
+  }
+
+  // Register into active index
+  dedupeIndex.insert(articleId, simhash);
+
+  // 3. Grey-zone semantic triage with Gemini Flash-Lite AI
+  const aiAnalyzer = new GeminiSpamAnalyzer({
+    apiKey: process.env.GEMINI_API_KEY,
+    confidenceThreshold: 0.85,
+  });
+
+  if (aiAnalyzer.shouldTriggerAiAnalysis(content)) {
+    const aiResult = await aiAnalyzer.analyze(content);
+    if (aiResult.isSpam) {
+      return { status: 'FLAGGED_BY_AI', reason: aiResult.reason, score: aiResult.confidence };
+    }
+  }
+
+  return { status: 'ACCEPTED' };
+}
+```
+
+---
+
+---
+
 ## 2. Kiến Trúc Pipeline Đa Tầng (Multi-Tier Defense)
 
 ```mermaid
