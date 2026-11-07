@@ -40,7 +40,7 @@ export interface VersionFileInfo {
 export interface VersionGuardBypassKeys {
   /**
    * LocalStorage key indicating a mock / test user session that should bypass version check
-   * default: 'winter_arc_mock_user'
+   * default: 'workspace_hub_mock_user'
    */
   mockUserKey?: string;
   /**

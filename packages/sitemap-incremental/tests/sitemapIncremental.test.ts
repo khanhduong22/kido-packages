@@ -55,7 +55,7 @@ describe('XmlBuilder', () => {
   it('builds standard urlset XML', () => {
     const xml = XmlBuilder.buildUrlset([
       {
-        loc: 'https://news.example.com/tin-tuc/bai-viet-1',
+        loc: 'https://index.vn/tin-tuc/bai-viet-1',
         lastmod: '2026-10-13T10:00:00+07:00',
         changefreq: 'monthly',
         priority: 0.6,
@@ -64,7 +64,7 @@ describe('XmlBuilder', () => {
 
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-    expect(xml).toContain('<loc>https://news.example.com/tin-tuc/bai-viet-1</loc>');
+    expect(xml).toContain('<loc>https://index.vn/tin-tuc/bai-viet-1</loc>');
     expect(xml).toContain('<lastmod>2026-10-13T10:00:00+07:00</lastmod>');
     expect(xml).toContain('<changefreq>monthly</changefreq>');
     expect(xml).toContain('<priority>0.6</priority>');
@@ -73,10 +73,10 @@ describe('XmlBuilder', () => {
   it('builds Google News urlset XML with news metadata', () => {
     const xml = XmlBuilder.buildGoogleNewsUrlset([
       {
-        loc: 'https://news.example.com/tin-tuc/gia-vang-tang-manh',
+        loc: 'https://index.vn/tin-tuc/gia-vang-tang-manh',
         lastmod: '2026-10-13T10:00:00+07:00',
         news: {
-          publicationName: 'ExampleNews',
+          publicationName: 'Index.vn',
           publicationLanguage: 'vi',
           publicationDate: '2026-10-13T10:00:00+07:00',
           title: 'Giá Vàng Tăng Mạnh Sáng Nay & Chi Tiết',
@@ -91,14 +91,14 @@ describe('XmlBuilder', () => {
 
   it('builds sitemap index XML', () => {
     const xml = XmlBuilder.buildSitemapIndex([
-      { loc: 'https://news.example.com/sitemap-news.xml', lastmod: '2026-10-13T10:00:00+07:00' },
-      { loc: 'https://news.example.com/sitemap-vi.xml' },
+      { loc: 'https://index.vn/sitemap-news.xml', lastmod: '2026-10-13T10:00:00+07:00' },
+      { loc: 'https://index.vn/sitemap-vi.xml' },
     ]);
 
     expect(xml).toContain('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-    expect(xml).toContain('<loc>https://news.example.com/sitemap-news.xml</loc>');
+    expect(xml).toContain('<loc>https://index.vn/sitemap-news.xml</loc>');
     expect(xml).toContain('<lastmod>2026-10-13T10:00:00+07:00</lastmod>');
-    expect(xml).toContain('<loc>https://news.example.com/sitemap-vi.xml</loc>');
+    expect(xml).toContain('<loc>https://index.vn/sitemap-vi.xml</loc>');
   });
 });
 
@@ -155,7 +155,7 @@ describe('SitemapIncrementalEngine (End-to-End)', () => {
     // Run 1: FULL GENERATION
     const engineFull = new SitemapIncrementalEngine({
       outDir: tmpDir,
-      baseUrl: 'https://test.ExampleNews',
+      baseUrl: 'https://test.index.vn',
       locales: ['vi', 'en'],
       isIncremental: false,
       isGzipEnabled: true,
@@ -178,7 +178,7 @@ describe('SitemapIncrementalEngine (End-to-End)', () => {
     // Run 2: INCREMENTAL GENERATION (Hot delta only)
     const engineIncremental = new SitemapIncrementalEngine({
       outDir: tmpDir,
-      baseUrl: 'https://test.ExampleNews',
+      baseUrl: 'https://test.index.vn',
       locales: ['vi', 'en'],
       isIncremental: true,
       isGzipEnabled: true,

@@ -111,7 +111,7 @@ export class SitemapIncrementalEngine {
         loc: `${this.options.baseUrl}${prefix}${a.slug}`,
         lastmod,
         news: {
-          publicationName: 'ExampleNews',
+          publicationName: 'Index.vn',
           publicationLanguage: a.locale,
           publicationDate: lastmod,
           title: a.title || a.slug,
@@ -136,7 +136,7 @@ export class SitemapIncrementalEngine {
         loc: `${this.options.baseUrl}${prefix}${a.slug}`,
         lastmod,
         news: {
-          publicationName: 'ExampleNews',
+          publicationName: 'Index.vn',
           publicationLanguage: a.locale,
           publicationDate: lastmod,
           title: a.title || a.slug,

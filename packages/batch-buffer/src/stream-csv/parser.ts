@@ -315,7 +315,7 @@ export async function processCsvStream<T = Record<string, unknown>>(
 
 /**
  * Binary-Split / Half-Split Fallback Batch Inserter.
- * Adapted directly from High-Throughput Shortlink BulkInsertService.
+ * Resilient bulk insert pattern for high-concurrency database ingestion.
  * When a batch insert throws a unique constraint or concurrency error,
  * it recursively splits the batch in half until single offending rows are isolated.
  */

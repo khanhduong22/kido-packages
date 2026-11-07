@@ -1,0 +1,44 @@
+{
+  "name": "@kido/ecommerce-admin",
+  "version": "1.0.0",
+  "description": "Fullstack Golden Standard E-Commerce Admin Portal (React UI + KPI Dashboard + Thermal Receipt K80 with VietQR + Hono API + Bun SQLite Repository)",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0",
+    "react-dom": "^18.2.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.3",
+    "@kido/admin-ui": "workspace:*",
+    "@kido/payment-vietqr": "workspace:*",
+    "hono": "^4.7.2",
+    "lucide-react": "^0.475.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

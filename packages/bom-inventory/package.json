@@ -1,0 +1,31 @@
+{
+  "name": "@kido/bom-inventory",
+  "version": "1.0.0",
+  "description": "Multi-level Bill of Materials (BOM) & Inventory Engine: Recipe Decomposition, Variance Analysis, Store Transfer Orders (STO), Perishable FEFO & Low-Stock Alerts, and WMS Barcode, Bin Location, Putaway & Wave Picking",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx src/index.test.ts src/inventory-alert/index.test.ts src/wms-barcode/index.test.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

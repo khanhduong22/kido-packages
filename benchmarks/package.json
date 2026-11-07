@@ -1,0 +1,11 @@
+{
+  "name": "@kido/benchmarks",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "High-Concurrency Benchmark Harness & k6 Load & Stress Test Suite for @kido/* Packages",
+  "scripts": {
+    "server": "node server/stress-target-server.ts",
+    "bench": "node run-suite.mjs"
+  }
+}

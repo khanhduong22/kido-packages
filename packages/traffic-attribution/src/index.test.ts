@@ -182,7 +182,7 @@ describe('@kido/traffic-attribution Test Suite', () => {
     });
 
     it('should detect TikTok from referer and in-app webview UA', () => {
-      const res1 = detectTrafficSource({ referer: 'https://www.tiktok.com/@examplebrand' });
+      const res1 = detectTrafficSource({ referer: 'https://www.tiktok.com/@creator' });
       assert.equal(res1.channel, 'social_network');
       assert.equal(res1.platform, 'tiktok');
 
@@ -221,7 +221,7 @@ describe('@kido/traffic-attribution Test Suite', () => {
     it('should recognize Internal traffic when referer matches internalDomains', () => {
       const res = detectTrafficSource({
         referer: 'https://portfolio.khanhdp.com/apps/fastfood',
-        internalDomains: ['khanhdp.com', 'tikat.vn'],
+        internalDomains: ['khanhdp.com', 'example.com'],
       });
       assert.equal(res.channel, 'internal');
       assert.equal(res.platform, 'portfolio.khanhdp.com');
@@ -338,15 +338,15 @@ describe('@kido/traffic-attribution Test Suite', () => {
     });
 
     it('should inject UTM parameters into target URL properly', () => {
-      const target = 'https://app.example.com/schedule#pricing';
+      const target = 'https://app.khanhdp.com/schedule#pricing';
       const enriched = injectUtmParams(target, {
         utm_source: 'tiktok',
         utm_medium: 'social',
-        utm_campaign: 'calis_challenge',
+        utm_campaign: 'summer_challenge',
       });
       assert.equal(enriched.includes('utm_source=tiktok'), true);
       assert.equal(enriched.includes('utm_medium=social'), true);
-      assert.equal(enriched.includes('utm_campaign=calis_challenge'), true);
+      assert.equal(enriched.includes('utm_campaign=summer_challenge'), true);
       assert.equal(enriched.includes('#pricing'), true);
     });
 

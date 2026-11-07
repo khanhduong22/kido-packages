@@ -106,7 +106,7 @@ describe("Semantic Cache Suite", () => {
         table: "DocumentChunk",
         vectorLiteral: "[0.1, 0.2, 0.3]",
         queryText: "thuong 200k",
-        filterSql: `"tenantId" = 'acme-corp'`,
+        filterSql: `"tenantId" = 'tenant-demo'`,
         limit: 5,
         k: 60,
       });

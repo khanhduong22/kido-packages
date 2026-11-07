@@ -1,0 +1,29 @@
+{
+  "name": "@kido/hot-counter",
+  "version": "1.0.0",
+  "description": "Tier-1 High-Concurrency Write Coalescing, Valkey Write-Behind & 16-Slot Sharded Hot Counter (DDIA Ch.6 & High-Concurrency Counter Architecture)",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

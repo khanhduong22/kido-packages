@@ -1,0 +1,31 @@
+{
+  "name": "@kido/zero-downtime-deploy",
+  "version": "1.0.0",
+  "description": "Universal Zero-Downtime Deployment Toolkit: Docker Blue-Green Atomic Container Swap, Inode Directory Swap, Healthcheck Probe & CI/CD Templates",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "zero-downtime-deploy": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

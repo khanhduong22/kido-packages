@@ -1,0 +1,32 @@
+{
+  "name": "@kido/b2b-credit",
+  "version": "1.0.0",
+  "description": "B2B Credit Limit Lockout Engine, Corporate Debt Aging Schedule (D0-D90+), Tiered Wholesale Volume Pricing Matrix, and Automated K80/A4 Statement of Account (SOA) Generator with VietQR",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx src/index.test.ts"
+  },
+  "dependencies": {
+    "@kido/payment-vietqr": "workspace:*",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

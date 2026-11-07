@@ -1,15 +1,17 @@
 {
-  "name": "kido-packages-open-core",
-  "version": "1.0.0",
+  "name": "kido-packages",
+  "version": "2.0.0",
   "private": true,
-  "description": "Kido Packages (@kido/*) — Open-Core Infrastructure & Core Web Vitals Suite by Duong Phuc Khanh (khanhdp.com)",
+  "description": "Kido Packages (@kido/*) — 37-Package 3-Tier Progressive Architecture Suite (SME Zero-Infra to Big-Tech Distributed) & k6 Load Benchmarks by Duong Phuc Khanh (khanhdp.com)",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "benchmarks"
   ],
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
+    "bench": "node benchmarks/run-suite.mjs",
     "clean": "turbo run clean"
   },
   "devDependencies": {

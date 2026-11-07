@@ -168,7 +168,7 @@ describe('AdaptiveProxyRotator / AdaptiveProxyService & Proxy Utilities', () => 
       totalRecords: 100,
       created: 80,
       successRate: 95.0,
-      rateLimitedSymbols: ['VNM', 'FPT'],
+      rateLimitedSymbols: ['VNM', 'VIC'],
       failedSymbols: [{ symbol: 'HPG', reason: 'Timeout' }],
     });
     expect(box).toContain('📈 Daily OHLCV Sync:');

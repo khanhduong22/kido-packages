@@ -51,7 +51,7 @@ const adapter = new PostgresSourceAdapter(sql, 'articles');
 // 2. Initialize Engine
 const engine = new SitemapIncrementalEngine({
   outDir: '/www/wwwroot/sitemaps',
-  baseUrl: 'https://news.example.com',
+  baseUrl: 'https://index.vn',
   locales: ['vi', 'en'],
   isIncremental: true, // true = hot delta only, false = full backfill
   isGzipEnabled: true, // creates .xml.gz alongside .xml

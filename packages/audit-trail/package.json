@@ -1,0 +1,38 @@
+{
+  "name": "@kido/audit-trail",
+  "version": "1.0.0",
+  "description": "Cryptographic Audit Trail Engine (SHA-256 Hash Chaining, Merkle Tree Shift Anchoring, Real-time Anomaly Detection) & High-Performance Non-blocking API Audit Logging Engine",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    },
+    "./api-audit": {
+      "types": "./dist/api-audit.d.ts",
+      "import": "./dist/api-audit.mjs",
+      "require": "./dist/api-audit.js",
+      "default": "./src/api-audit/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx src/index.test.ts src/partition-archiver.test.ts src/api-audit/index.test.ts"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

@@ -43,18 +43,18 @@ describe('@kido/pwa-swr-guard — Service Worker SWR & 404 Self-Heal Engine', ()
     );
     assert.equal(
       isApiOrRscRequest(
-        new URL('https://app.example.com/winter-arc/today?_rsc=1a2b3c')
+        new URL('https://app.example.com/workspace-hub/today?_rsc=1a2b3c')
       ),
       true
     );
     assert.equal(
-      isApiOrRscRequest(new URL('https://app.example.com/winter-arc/today'), {
+      isApiOrRscRequest(new URL('https://app.example.com/workspace-hub/today'), {
         RSC: '1',
       }),
       true
     );
     assert.equal(
-      isApiOrRscRequest(new URL('https://app.example.com/winter-arc/today'), {
+      isApiOrRscRequest(new URL('https://app.example.com/workspace-hub/today'), {
         Accept: 'text/x-component, */*',
       }),
       true
@@ -64,7 +64,7 @@ describe('@kido/pwa-swr-guard — Service Worker SWR & 404 Self-Heal Engine', ()
       true
     );
     assert.equal(
-      isApiOrRscRequest(new URL('https://app.example.com/winter-arc/today'), {
+      isApiOrRscRequest(new URL('https://app.example.com/workspace-hub/today'), {
         Accept: 'text/html',
       }),
       false
@@ -76,8 +76,8 @@ describe('@kido/pwa-swr-guard — Service Worker SWR & 404 Self-Heal Engine', ()
     assert.equal(isStaticChunkAsset('/assets/bundle.css'), true);
     assert.equal(isStaticChunkAsset('/fonts/inter-vietnamese.woff2'), true);
     assert.equal(isStaticChunkAsset('/hero.webp'), true);
-    assert.equal(isStaticChunkAsset('/winter-arc/today', 'script'), true);
-    assert.equal(isStaticChunkAsset('/winter-arc/today', 'document'), false);
+    assert.equal(isStaticChunkAsset('/workspace-hub/today', 'script'), true);
+    assert.equal(isStaticChunkAsset('/workspace-hub/today', 'document'), false);
   });
 
   it('triggers 404 self-heal only when hashed static chunks return HTTP 404', () => {
@@ -94,21 +94,21 @@ describe('@kido/pwa-swr-guard — Service Worker SWR & 404 Self-Heal Engine', ()
       false
     );
     assert.equal(
-      shouldTrigger404SelfHeal(404, '/winter-arc/unknown-route'),
+      shouldTrigger404SelfHeal(404, '/workspace-hub/unknown-route'),
       false
     );
   });
 
   it('generates production-ready SWR Service Worker code with NavigationPreload and 404 self-healing', () => {
     const code = generateSwrServiceWorkerCode({
-      cacheName: 'winter-arc-v13',
+      cacheName: 'workspace-hub-v13',
       offlineFallbackUrl: '/offline.html',
       precacheAssets: ['/offline.html', '/fonts/inter-latin.woff2'],
-      warmShellRoutes: ['/winter-arc', '/winter-arc/today'],
-      canonicalPathPrefixes: ['/winter-arc'],
+      warmShellRoutes: ['/workspace-hub', '/workspace-hub/today'],
+      canonicalPathPrefixes: ['/workspace-hub'],
     });
 
-    assert.match(code, /const CACHE_NAME = "winter-arc-v13";/);
+    assert.match(code, /const CACHE_NAME = "workspace-hub-v13";/);
     assert.match(code, /self\.registration\.navigationPreload\.enable\(\)/);
     assert.match(code, /WARM_SHELL_ROUTES/);
     assert.match(code, /event\.preloadResponse/);

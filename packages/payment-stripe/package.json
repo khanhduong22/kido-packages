@@ -1,0 +1,28 @@
+{
+  "name": "@kido/payment-stripe",
+  "version": "1.0.0",
+  "description": "Production-grade Stripe Billing & SaaS Payments engine: HMAC-SHA256 webhook verification with 300s replay guard, idempotency router, proration math, subscription lifecycle state machine, plan quota reconciler, and checkout/portal builders",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

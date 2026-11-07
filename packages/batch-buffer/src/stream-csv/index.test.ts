@@ -354,7 +354,7 @@ describe('@kido/stream-csv-batch', () => {
     });
   });
 
-  describe('Binary-Split Fallback Batch Inserter (High-Throughput Gateway Architecture)', () => {
+  describe('Binary-Split Fallback Batch Inserter (Fault-Tolerant Bulk Insert Architecture)', () => {
     it('succeeds in single batch when no conflicts occur', async () => {
       const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
       const inserted: number[] = [];

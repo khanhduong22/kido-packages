@@ -1,0 +1,262 @@
+name: Zero-Downtime Deployment & CI/CD to Linux VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps-${{ github.repository }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  quality-gate:
+    name: 🧪 Quality Gate (Tests, Build & Monorepo Validation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Runtime
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm v10
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Get pnpm Store Directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm Cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Monorepo Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Monorepo Build
+        run: pnpm build
+
+      - name: Run Tests via Bun Runtime (Fast & Reliable)
+        run: |
+          bun test packages/*/src/*.test.ts packages/*/test/*.test.ts apps/*/test/*.test.ts
+
+      - name: Upload Web Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+          retention-days: 1
+
+      - name: Upload API Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: apps/api/dist/
+          retention-days: 1
+
+  deploy-zero-downtime:
+    name: 🚀 Zero-Downtime Deployment to VPS
+    needs: quality-gate
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Web Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+
+      - name: Download API Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-dist
+          path: apps/api/dist
+
+      - name: Sync Static Web & API Code to VPS Staging
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+          # Target directory setup
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${SSH_USER}@${VPS_HOST} \
+            "mkdir -p /opt/kido-infra/docker/portfolio/html/apps/{{APP_SLUG}}_next /opt/kido-infra/apps/{{APP_SLUG}}-api/dist /opt/kido-infra/docker/{{APP_SLUG}}-api"
+
+          # 1. Sync compiled Web SPA dist to staging directory for atomic swap
+          rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            apps/web/dist/ ${SSH_USER}@${VPS_HOST}:/opt/kido-infra/docker/portfolio/html/apps/{{APP_SLUG}}_next/
+
+          # 2. Sync compiled API bundle, package.json, source files, and Dockerfile
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            apps/api/dist/ ${SSH_USER}@${VPS_HOST}:/opt/kido-infra/apps/{{APP_SLUG}}-api/dist/
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            apps/api/src/ ${SSH_USER}@${VPS_HOST}:/opt/kido-infra/apps/{{APP_SLUG}}-api/src/
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            apps/api/package.json ${SSH_USER}@${VPS_HOST}:/opt/kido-infra/apps/{{APP_SLUG}}-api/package.json
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            apps/api/Dockerfile.vps ${SSH_USER}@${VPS_HOST}:/opt/kido-infra/apps/{{APP_SLUG}}-api/Dockerfile
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            docker/vps-docker-compose.yml ${SSH_USER}@${VPS_HOST}:/opt/kido-infra/docker/{{APP_SLUG}}-api/docker-compose.yml
+
+          # 3. Clean up deploy key from runner
+          rm -f ~/.ssh/deploy_key
+
+      - name: Execute Blue-Green Atomic Swap & Healthcheck via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+
+            echo "=========================================================="
+            echo "🚀 Zero-Downtime Deployment: Blue-Green Atomic Swap"
+            echo "=========================================================="
+
+            APP_SLUG="{{APP_SLUG}}"
+            API_CONTAINER="${APP_SLUG}-api"
+            NEXT_CONTAINER="${APP_SLUG}-api_next"
+            OLD_CONTAINER="${APP_SLUG}-api_old"
+            STATIC_DIR="/opt/kido-infra/docker/portfolio/html/apps/${APP_SLUG}"
+            STATIC_NEXT="/opt/kido-infra/docker/portfolio/html/apps/${APP_SLUG}_next"
+            STATIC_BACKUP="/opt/kido-infra/docker/portfolio/html/apps/${APP_SLUG}_backup"
+            HEALTH_URL="{{HEALTH_URL}}"
+
+            # -------------------------------------------------------------
+            # STEP 1: Inode Atomic Directory Swap for Frontend Static SPA (< 1ms)
+            # -------------------------------------------------------------
+            if [ -d "$STATIC_NEXT" ] && [ -n "$(ls -A "$STATIC_NEXT" 2>/dev/null)" ]; then
+              echo "🔄 [FE] Executing atomic directory swap for $STATIC_DIR..."
+              mkdir -p "$STATIC_DIR"
+              rm -rf "$STATIC_BACKUP"
+              mv "$STATIC_DIR" "$STATIC_BACKUP"
+              mv "$STATIC_NEXT" "$STATIC_DIR"
+              rm -rf "$STATIC_BACKUP"
+              echo "✅ [FE] Web static swap finished atomically (< 1ms)."
+            fi
+
+            # -------------------------------------------------------------
+            # STEP 2: Blue-Green Candidate Container Launch for Backend API
+            # -------------------------------------------------------------
+            echo "🐳 [BE] Building and launching candidate container: $NEXT_CONTAINER..."
+            cd /opt/kido-infra/docker/${API_CONTAINER}
+
+            # Build candidate image using docker-compose build
+            docker compose build
+
+            # Ensure any leftover candidate container is removed
+            docker rm -f "$NEXT_CONTAINER" 2>/dev/null || true
+
+            # Extract the built image name from docker-compose config
+            IMAGE_NAME=$(docker compose config --images | head -n 1)
+            if [ -z "$IMAGE_NAME" ]; then
+              IMAGE_NAME="${API_CONTAINER}:latest"
+            fi
+
+            echo "📦 [BE] Starting candidate container $NEXT_CONTAINER with image $IMAGE_NAME..."
+            # Run candidate on ops_bridge with env file and volumes matching production
+            docker run -d \
+              --name "$NEXT_CONTAINER" \
+              --network ops_bridge \
+              --restart unless-stopped \
+              --env-file .env \
+              -v /opt/kido-infra/apps/${API_CONTAINER}/dist:/app/dist:ro \
+              -v /opt/kido-infra/data/${APP_SLUG}:/app/data \
+              "$IMAGE_NAME"
+
+            # -------------------------------------------------------------
+            # STEP 3: Healthcheck Probe Candidate Container (Timeout: 45s)
+            # -------------------------------------------------------------
+            echo "🔍 [BE] Probing candidate container health..."
+            MAX_RETRIES=22
+            COUNT=0
+            CANDIDATE_HEALTHY=false
+
+            while [ $COUNT -lt $MAX_RETRIES ]; do
+              # Test direct container endpoint via curl inside ops_bridge network or via localhost/host
+              HTTP_STATUS=$(docker exec "$NEXT_CONTAINER" bun -e 'fetch("http://127.0.0.1:3000/health").then(r=>console.log(r.status)).catch(()=>console.log("000"))' 2>/dev/null || echo "000")
+              
+              if [ "$HTTP_STATUS" = "200" ]; then
+                CANDIDATE_HEALTHY=true
+                echo "✅ [BE] Candidate container $NEXT_CONTAINER is HEALTHY (HTTP 200)!"
+                break
+              fi
+
+              echo "⏳ [BE] Candidate starting up... ($((COUNT+1))/$MAX_RETRIES, status: $HTTP_STATUS)"
+              sleep 2
+              COUNT=$((COUNT+1))
+            done
+
+            # -------------------------------------------------------------
+            # STEP 4: Auto-Rollback if Candidate Fails Healthcheck
+            # -------------------------------------------------------------
+            if [ "$CANDIDATE_HEALTHY" != true ]; then
+              echo "❌ [BE] Candidate healthcheck FAILED! Initiating auto-rollback..."
+              docker logs --tail 50 "$NEXT_CONTAINER" || true
+              docker rm -f "$NEXT_CONTAINER" || true
+              echo "🛡️ [BE] Candidate discarded. Existing container $API_CONTAINER remains 100% active."
+              exit 1
+            fi
+
+            # -------------------------------------------------------------
+            # STEP 5: Atomic Container Rename Swap
+            # -------------------------------------------------------------
+            echo "🔄 [BE] Performing atomic container rename swap..."
+            docker rm -f "$OLD_CONTAINER" 2>/dev/null || true
+
+            if docker inspect "$API_CONTAINER" >/dev/null 2>&1; then
+              docker rename "$API_CONTAINER" "$OLD_CONTAINER"
+            fi
+
+            docker rename "$NEXT_CONTAINER" "$API_CONTAINER"
+            echo "✅ [BE] Successfully promoted $NEXT_CONTAINER -> $API_CONTAINER."
+
+            # -------------------------------------------------------------
+            # STEP 6: Reload Caddy Reverse Proxy & Drain In-flight Requests
+            # -------------------------------------------------------------
+            echo "🌐 [BE] Reloading Caddy reverse proxy..."
+            docker exec caddy caddy reload --config /etc/caddy/Caddyfile || true
+
+            if docker inspect "$OLD_CONTAINER" >/dev/null 2>&1; then
+              echo "⏳ [BE] Draining in-flight requests on old container for 3 seconds..."
+              sleep 3
+              echo "🧹 [BE] Removing drained container $OLD_CONTAINER..."
+              docker rm -f "$OLD_CONTAINER" 2>/dev/null || true
+            fi
+
+            # -------------------------------------------------------------
+            # STEP 7: Final Public Healthcheck Verification
+            # -------------------------------------------------------------
+            echo "🔍 Probing public health endpoint $HEALTH_URL..."
+            if curl -f -s "$HEALTH_URL" | grep -q '"status":"ok"'; then
+              echo "🎉 Public healthcheck PASSED! 100% Zero-Downtime Deployment Finished."
+            else
+              echo "⚠️ Public healthcheck returned non-standard payload, but container is running healthy."
+            fi

@@ -1,0 +1,33 @@
+{
+  "name": "@kido/notify",
+  "version": "1.1.0",
+  "description": "Multi-channel notifications for Telegram Bot, Web Push (VAPID), Ops Alert Webhook Bridge, and Hybrid Timing Wheel + Valkey ZSET Single-Timeout Notification Scheduler",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx src/*.test.ts src/ops-alert-bridge/*.test.ts"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@types/web-push": "^3.6.4",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

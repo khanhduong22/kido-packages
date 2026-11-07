@@ -1,5 +1,5 @@
 export interface SwrServiceWorkerConfig {
-  /** Cache Storage bucket versioned name (e.g. 'winter-arc-v13') */
+  /** Cache Storage bucket versioned name (e.g. 'workspace-hub-v13') */
   cacheName: string;
   /** Offline fallback HTML route (default: '/offline.html') */
   offlineFallbackUrl?: string;

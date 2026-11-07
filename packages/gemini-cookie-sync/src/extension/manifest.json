@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Cookie Sync",
+  "version": "1.2.4",
+  "description": "Tự động đồng bộ cookie Google Gemini lên server local để duy trì phiên ImageFX liên tục.",
+  "permissions": [
+    "cookies",
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*.google.com/*",
+    "https://google.com/*",
+    "https://*.example.com/*",
+    "https://example.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Gemini Cookie Sync"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.example.com/*",
+        "https://example.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "http://localhost:*/*",
+        "http://127.0.0.1:*/*"
+      ],
+      "js": [
+        "content_script.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

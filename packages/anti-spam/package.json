@@ -1,0 +1,40 @@
+{
+  "name": "@kido/anti-spam",
+  "version": "1.0.0",
+  "description": "High-performance zero-dependency anti-spam & content deduplication engine featuring Aho-Corasick O(N) multi-pattern trie, 64-bit Charikar SimHash, O(1) Pigeonhole NearDuplicateIndex, Vietnamese Unicode normalizer, homoglyph & leetspeak folding, phishing heuristics, velocity rate guard, and Gemini AI semantic analyzer",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    },
+    "./presets": {
+      "types": "./dist/presets.d.ts",
+      "import": "./dist/presets.mjs",
+      "require": "./dist/presets.js",
+      "default": "./src/presets/index.ts"
+    },
+    "./dedupe": {
+      "types": "./dist/dedupe.d.ts",
+      "import": "./dist/dedupe.mjs",
+      "require": "./dist/dedupe.js",
+      "default": "./src/dedupe/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "name": "@kido/tenant-guard",
+  "version": "1.0.0",
+  "description": "Multi-Tenant RLS, RBAC/ABAC Security Guard, Workspace Team RBAC, Surgical Tenant Snapshot & Public Demo Sandbox Engine",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    },
+    "./team-rbac": {
+      "types": "./dist/team-rbac.d.ts",
+      "import": "./dist/team-rbac.mjs",
+      "require": "./dist/team-rbac.js",
+      "default": "./src/team-rbac/index.ts"
+    },
+    "./snapshot": {
+      "types": "./dist/snapshot.d.ts",
+      "import": "./dist/snapshot.mjs",
+      "require": "./dist/snapshot.js",
+      "default": "./src/snapshot/index.ts"
+    },
+    "./sandbox": {
+      "types": "./dist/sandbox.d.ts",
+      "import": "./dist/sandbox.mjs",
+      "require": "./dist/sandbox.js",
+      "default": "./src/sandbox/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx src/index.test.ts src/team-rbac/index.test.ts src/snapshot/index.test.ts src/sandbox/index.test.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

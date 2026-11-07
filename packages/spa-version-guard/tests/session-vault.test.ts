@@ -49,13 +49,13 @@ describe('@kido/spa-version-guard — Multi-Layer Session & CacheStorage Vault',
 
   describe('2. Cookie & Domain Resolution', () => {
     it('resolves root cookie domain accurately across standard and multi-segment TLDs', () => {
-      expect(resolveRootCookieDomain('app.example.com')).toBe('.app.example.com');
-      expect(resolveRootCookieDomain('www.app.example.com')).toBe('.app.example.com');
-      expect(resolveRootCookieDomain('api.app.app.example.com')).toBe('.app.example.com');
+      expect(resolveRootCookieDomain('app.example.com')).toBe('.example.com');
+      expect(resolveRootCookieDomain('www.example.com')).toBe('.example.com');
+      expect(resolveRootCookieDomain('api.app.example.com')).toBe('.example.com');
       expect(resolveRootCookieDomain('khanhdp.com:3000')).toBe('.khanhdp.com');
 
       // Second-level TLDs (.com.vn, .co.uk)
-      expect(resolveRootCookieDomain('store.store.example.com')).toBe('.store.example.com');
+      expect(resolveRootCookieDomain('store.example.com.vn')).toBe('.example.com.vn');
       expect(resolveRootCookieDomain('sub.domain.co.uk')).toBe('.domain.co.uk');
 
       // Localhost and IP addresses should return empty string (host-only)
@@ -128,7 +128,7 @@ describe('@kido/spa-version-guard — Multi-Layer Session & CacheStorage Vault',
       // Mock window
       (globalThis as any).window = {
         location: {
-          hostname: 'www.app.example.com',
+          hostname: 'app.example.com',
           protocol: 'https:',
         },
         caches: {

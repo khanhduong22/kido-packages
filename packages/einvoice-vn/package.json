@@ -1,0 +1,31 @@
+{
+  "name": "@kido/einvoice-vn",
+  "version": "1.0.0",
+  "description": "Vietnamese Electronic Invoice (Hóa Đơn Điện Tử) according to Circular 78/2021/TT-BTC & Decree 123/2020/ND-CP with Tax Calculation, Tax Authority QR, W3C XMLDSig signing, and VNPT/Viettel/MISA/Mock adapters",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx src/index.test.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

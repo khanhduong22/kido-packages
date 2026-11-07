@@ -13,7 +13,7 @@ export const DEFAULT_COOLDOWN_MS = 300_000; // 5 minutes
 export const DEFAULT_FETCH_TIMEOUT_MS = 5_000;
 
 export const DEFAULT_BYPASS_KEYS: Required<VersionGuardBypassKeys> = {
-  mockUserKey: 'winter_arc_mock_user',
+  mockUserKey: 'workspace_hub_mock_user',
   isLoggingInKey: 'is_logging_in',
   lastReloadTsKey: 'last_version_reload_ts',
 };
