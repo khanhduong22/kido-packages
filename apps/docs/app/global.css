@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+:root {
+  --color-fd-background: #0d0e11;
+  --color-fd-foreground: #f4f4f5;
+  --color-fd-card: #121316;
+  --color-fd-card-foreground: #f4f4f5;
+  --color-fd-popover: #121316;
+  --color-fd-popover-foreground: #f4f4f5;
+  --color-fd-muted: #181a1f;
+  --color-fd-muted-foreground: #a1a1aa;
+  --color-fd-secondary: #181a1f;
+  --color-fd-secondary-foreground: #f4f4f5;
+  --color-fd-border: #27272a;
+  --color-fd-accent: #1e2025;
+  --color-fd-accent-foreground: #fafafa;
+  --color-fd-primary: #d97706;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-ring: #d97706;
+}
+
+.dark {
+  --color-fd-background: #0d0e11;
+  --color-fd-foreground: #f4f4f5;
+  --color-fd-card: #121316;
+  --color-fd-card-foreground: #f4f4f5;
+  --color-fd-popover: #121316;
+  --color-fd-popover-foreground: #f4f4f5;
+  --color-fd-muted: #181a1f;
+  --color-fd-muted-foreground: #a1a1aa;
+  --color-fd-secondary: #181a1f;
+  --color-fd-secondary-foreground: #f4f4f5;
+  --color-fd-border: #27272a;
+  --color-fd-accent: #1e2025;
+  --color-fd-accent-foreground: #fafafa;
+  --color-fd-primary: #f59e0b;
+  --color-fd-primary-foreground: #0d0e11;
+  --color-fd-ring: #d97706;
+}
+
+html {
+  scrollbar-gutter: stable;
+  color-scheme: dark;
+}
+
+body {
+  background-color: #0d0e11;
+  color: #f4f4f5;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* Claude Code monospaced font highlights */
+code, kbd, samp, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Custom dark carbon scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0e11;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* Claude Code terminal selection style */
+::selection {
+  background-color: rgba(217, 119, 6, 0.35);
+  color: #ffffff;
+}

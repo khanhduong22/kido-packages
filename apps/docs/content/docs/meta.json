@@ -1,0 +1,10 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Architecture Blueprints---",
+    "blueprints",
+    "---Crown Jewel Suites---",
+    "packages"
+  ]
+}

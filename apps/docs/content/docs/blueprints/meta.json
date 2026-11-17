@@ -1,0 +1,13 @@
+{
+  "title": "Architecture Blueprints",
+  "pages": [
+    "01-youtube-view-counter",
+    "02-ai-rag-copilot",
+    "03-flash-sale-engine",
+    "04-distributed-db-sharding",
+    "05-twitter-hybrid-feed",
+    "07-pg-cdc-outbox",
+    "08-multitenant-snapshot",
+    "11-double-entry-fintech"
+  ]
+}

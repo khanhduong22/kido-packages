@@ -1,0 +1,127 @@
+---
+title: Pillar 1. Concurrency, Caching & Distributed Data
+description: 6 Crown Jewel Systems Suites for Hot-Key Counters, UTF-8 SSE AI Streaming, Stampede-Safe Caching, Consistent Hashing, Hybrid Feeds, and PostgreSQL Logical WAL CDC.
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Pillar 1. Concurrency, Caching & Distributed Data
+
+> **6 Crown Jewel Systems Suites — Python 3.12+ (`FastAPI / asyncio`) & TypeScript**  
+> High-throughput hot-key write coalescing, AI token streaming with RPM/TPM rate guards, stampede-safe L1/L2 caching, distributed database sharding, hybrid timelines, and PostgreSQL logical WAL CDC.
+
+---
+
+## 📦 Kept Crown Jewel Suites
+
+| Suite Name | Dedicated Guide | Architecture Paradigm & Core Capabilities |
+|---|---|---|
+| `@kido/hot-counter` | [Deep Dive & Dual-Language Spec](/docs/packages/02-concurrency-and-caching/hot-counter) | **16-Slot Sharded Counter + Valkey Write-Behind + HLL Dedupe**:<br/>• `YouTubeHybridViewEngine`, `ValkeyWriteBehindCounter`<br/>• `SlottedCounter`, `MicroBatchCoalescer`, `LUA_ATOMIC_DRAIN_HASH` |
+| `@kido/ai-stream` | [Deep Dive & Dual-Language Spec](/docs/packages/02-concurrency-and-caching/ai-stream) | **UTF-8 Safe SSE Streaming + Edge Flush + Dual RPM/TPM Guard**:<br/>• `SseStreamParser`, `formatSseDataFrame`, `CANONICAL_SSE_HEADERS`<br/>• `DualRpmTpmTokenBucket`, `executeWithAiRateGuard` |
+| `@kido/resilient-cache` | [Deep Dive & Dual-Language Spec](/docs/packages/02-concurrency-and-caching/resilient-cache) | **SingleFlight + Circuit Breaker + Lua Flash-Sale + Semantic Vector Cache**:<br/>• `InFlightManager`, `ResilientCache`, `CircuitBreaker`<br/>• `FlashSaleEngine`, `SemanticVectorCache`, `fuseRrfRankings` |
+| `@kido/db-sharding` | [Deep Dive & Dual-Language Spec](/docs/packages/02-concurrency-and-caching/db-sharding) | **Distributed Sharding & 2-Level Compound Partitioning (DDIA Ch. 6)**:<br/>• `murmurhash3_32`, `HashShardRouter`, `ConsistentHashRing`<br/>• `CompoundPartitionManager`, `buildCompoundDetachSQL` |
+| `@kido/hybrid-feed` | [Deep Dive & Dual-Language Spec](/docs/packages/02-concurrency-and-caching/hybrid-feed) | **Twitter/X Hybrid Fanout & O(N log K) K-Way Cursor Merger**:<br/>• `HybridFanoutEngine`, `kWayMergeFeeds`, `BinaryMaxHeap`<br/>• `ValkeyTimelineMixer`, `LUA_ZADD_CAPPED_TIMELINE` |
+| `@kido/async-sync` | [Deep Dive & Dual-Language Spec](/docs/packages/02-concurrency-and-caching/async-sync) | **PostgreSQL Logical WAL CDC, Partition Archiver & Litestream PITR**:<br/>• `Tier1NativeWalSlotPoller`, `IdempotentLsnTracker`<br/>• `ColdTierPartitionArchiver`, `uuidv7`, `SyncEngine` |
+
+---
+
+## 🔍 Core Polyglot Patterns
+
+<Callout title="🤖 Karpathy nanoGPT + shadcn White-Box Standard">
+  Every suite in this pillar documents exact concurrency and memory invariants before implementation. Copy the **Python 3.12+** or **TypeScript** reference slice directly into your repository without black-box framework lock-in.
+</Callout>
+
+### 1. Stampede-Safe SingleFlight Coalescing (`@kido/resilient-cache`)
+
+When thousands of concurrent requests miss cache on the same hot key simultaneously, SingleFlight collapses them into **1 single backend query**:
+
+<Tabs items={['Python (FastAPI / asyncio)', 'TypeScript (Zero-Dep Slice)']}>
+  <Tab value="Python (FastAPI / asyncio)">
+    ```python
+    import asyncio
+    from collections.abc import Awaitable, Callable
+    from typing import TypeVar
+
+    T = TypeVar("T")
+
+    class InFlightSingleFlight:
+        """Collapses concurrent cache misses on identical keys into one coroutine."""
+
+        def __init__(self) -> None:
+            self._inflight: dict[str, asyncio.Future[object]] = {}
+
+        async def dedupe(self, key: str, fetcher: Callable[[], Awaitable[T]]) -> T:
+            if key in self._inflight:
+                return await asyncio.shield(self._inflight[key])  # type: ignore[return-value]
+
+            loop = asyncio.get_running_loop()
+            future: asyncio.Future[object] = loop.create_future()
+            self._inflight[key] = future
+            try:
+                result = await fetcher()
+                future.set_result(result)
+                return result
+            except BaseException as exc:
+                future.set_exception(exc)
+                raise
+            finally:
+                self._inflight.pop(key, None)
+    ```
+  </Tab>
+  <Tab value="TypeScript (Zero-Dep Slice)">
+    ```typescript
+    import { InFlightManager } from '@kido/resilient-cache';
+
+    const flight = new InFlightManager();
+
+    export async function getMarketTicker(symbol: string) {
+      return await flight.dedupe(`ticker:${symbol}`, async () => {
+        // Only 1 execution hits the database or upstream provider
+        return await fetchRealtimeQuotes(symbol);
+      });
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### 2. Consistent Hash Ring with 150 Virtual Nodes (`@kido/db-sharding`)
+
+Distribute keys uniformly across physical database shards while minimizing key movement during cluster scaling:
+
+<Tabs items={['Python (FastAPI / asyncio)', 'TypeScript (Zero-Dep Slice)']}>
+  <Tab value="Python (FastAPI / asyncio)">
+    ```python
+    from bisect import bisect_right
+    import hashlib
+
+    def stable_u32(key: str) -> int:
+        return int.from_bytes(hashlib.blake2b(key.encode(), digest_size=4).digest(), "big")
+
+    class ConsistentHashRing:
+        def __init__(self, nodes: list[str], vnodes_per_node: int = 150) -> None:
+            self._ring: list[tuple[int, str]] = []
+            for node in nodes:
+                for idx in range(vnodes_per_node):
+                    self._ring.append((stable_u32(f"{node}#vn{idx}"), node))
+            self._ring.sort(key=lambda item: item[0])
+            self._tokens = [token for token, _ in self._ring]
+
+        def get_node(self, key: str) -> str:
+            pos = bisect_right(self._tokens, stable_u32(key)) % len(self._ring)
+            return self._ring[pos][1]
+    ```
+  </Tab>
+  <Tab value="TypeScript (Zero-Dep Slice)">
+    ```typescript
+    import { ConsistentHashRing } from '@kido/db-sharding/consistent-hash-ring';
+
+    const ring = new ConsistentHashRing({
+      vnodesPerNode: 150,
+      nodes: ['db-shard-01', 'db-shard-02', 'db-shard-03'],
+    });
+
+    const targetShard = ring.getNode('tenant_guild_98765');
+    ```
+  </Tab>
+</Tabs>

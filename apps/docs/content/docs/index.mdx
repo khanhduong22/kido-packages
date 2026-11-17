@@ -1,0 +1,171 @@
+---
+title: Kido Bag Overview
+description: The nanoGPT + Shadcn for Distributed Systems — 8 Principal-Grade Systems Suites & 8 Production Architecture Blueprints in Python (FastAPI / asyncio) and TypeScript.
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Kido Bag (`bag.khanhdp.com`)
+
+> **"The nanoGPT + Shadcn for Distributed Systems"**  
+> White-box ownership, invariant-first AI agent porting, and zero black-box npm or PyPI lock-in.
+
+Welcome to **Kido Bag**, a distilled reference library of **8 Crown Jewel Systems Suites** and **8 Production Architecture Blueprints** built for high-concurrency **Python 3.12+ (`FastAPI`, `asyncio`, `asyncpg`, `valkey.asyncio`)** and **TypeScript + SQL** backends.
+
+---
+
+## 🎯 Core Philosophy: Karpathy `nanoGPT` + `shadcn` White-Box Reference
+
+Modern backend engineering suffers from black-box dependency bloat: pulling in heavy libraries for concurrency locks, rate limiters, sharding routers, or ledger state machines. When an incident strikes at 3:00 AM, opaque library abstractions hide the exact concurrency boundaries and memory limits.
+
+Kido Bag follows a clean white-box philosophy:
+
+<Cards>
+  <Card
+    title="Karpathy nanoGPT Clarity"
+    description="Compact, self-contained reference implementations you can read top-to-bottom in minutes and own completely."
+  />
+  <Card
+    title="Polyglot Python + TypeScript"
+    description="Every blueprint and suite provides dual-language implementations in Python 3.12+ (FastAPI / asyncio) and zero-dependency TypeScript."
+  />
+  <Card
+    title="Invariant-First AI Agent Porting"
+    description="Each page includes an AI Agent Porting & Invariant Spec detailing Big-O bounds, atomicity rules, and failure modes."
+  />
+  <Card
+    title="Zero Black-Box Lock-In"
+    description="Copy the exact files or instruct your coding agent to port the verified invariants directly into your own repository."
+  />
+</Cards>
+
+---
+
+## ⚡ The 3-Layer White-Box Architecture
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  LAYER 3: 8 PRODUCTION ARCHITECTURE BLUEPRINTS                         │
+│  End-to-End Topologies · Mermaid C4 Flows · Benchmarks · Checklists    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ composes
+┌───────────────────────────────────▼────────────────────────────────────┐
+│  LAYER 2: 8 CROWN JEWEL SYSTEMS SUITES (@kido/*)                       │
+│  hot-counter · ai-stream · resilient-cache · db-sharding · hybrid-feed │
+│  async-sync · tenant-guard · wallet-ledger                             │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ implements
+┌───────────────────────────────────▼────────────────────────────────────┐
+│  LAYER 1: POLYGLOT REFERENCE SLICES + INVARIANT SPECS                  │
+│  Python 3.12+ (FastAPI / asyncio) + TypeScript + AI Agent Porting Spec │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+1. **Layer 1: Polyglot Reference Slices & Invariant Specs**: Self-contained concurrency, caching, sharding, CDC, isolation, and ledger primitives paired with explicit mathematical invariants.
+2. **Layer 2: 8 Crown Jewel Systems Suites**: Focused, high-leverage toolkits covering hot counters, LLM streaming, stampede/flash-sale defense, consistent hashing, hybrid timelines, WAL CDC, multi-tenant RLS, and double-entry ledgers.
+3. **Layer 3: 8 Production Architecture Blueprints**: Full system recipes combining suites with topology diagrams, failure-mode mitigations, and benchmark verification.
+
+---
+
+## 🚀 Two Ways to Adopt Kido Bag
+
+<Tabs items={['Mode A: White-Box Copy & AI Agent Porting (Recommended)', 'Mode B: Surgical CLI & Monorepo Import']}>
+  <Tab value="Mode A: White-Box Copy & AI Agent Porting (Recommended)">
+    ### Mode A: Copy & Port Directly via Reference Spec (Python + TS)
+    Fetch any page as clean Markdown via `/llms.mdx/docs/.../content.md` or read `/llms.txt`, inspect the **AI Agent Porting & Invariant Spec**, and copy the Python 3.12+ (`FastAPI` / `asyncio`) or TypeScript reference code directly into your repository:
+
+    ```bash
+    # Fetch the white-box markdown spec & dual-language code for @kido/hot-counter
+    curl -fsSL https://bag.khanhdp.com/llms.mdx/docs/packages/02-concurrency-and-caching/hot-counter/content.md
+    ```
+
+    **Benefits:**
+    - Zero external package manager dependencies or runtime lock-in.
+    - Faithful cross-language porting to Python, TypeScript, Go, or Rust using explicit invariants.
+    - Complete visibility during debugging and load tuning.
+  </Tab>
+  <Tab value="Mode B: Surgical CLI & Monorepo Import">
+    ### Mode B: Surgical Slice CLI & Monorepo Import
+    For TypeScript / Bun repositories, cherry-pick individual slices into `src/lib/` or import directly inside the `kido-packages` workspace:
+
+    ```bash
+    npx kido-bag add hot-counter/youtube-view-engine
+    ```
+
+    ```typescript
+    import { YouTubeHybridViewEngine } from '@kido/hot-counter/youtube-view-engine';
+    import { SemanticVectorCache } from '@kido/resilient-cache/semantic-cache';
+    import { DoubleEntryLedger } from '@kido/wallet-ledger';
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## 🗺️ The 8 Production Architecture Blueprints
+
+<Cards>
+  <Card
+    title="01. YouTube-Scale Video View Counter"
+    href="/docs/blueprints/01-youtube-view-counter"
+    description="Adaptive 16-Slot Sharded Write + HyperLogLog Dedupe + Anti-F5 Defense (100k views/sec, 99.9% DB write cut)."
+  />
+  <Card
+    title="02. 5-Stage RAG & AI Copilot Pipeline"
+    href="/docs/blueprints/02-ai-rag-copilot"
+    description="Semantic Vector Cache + Hybrid RRF + UTF-8 SSE Stream + Dual RPM/TPM Guard (TTFT &lt; 350ms)."
+  />
+  <Card
+    title="03. Zero-Oversell Flash Sale Engine"
+    href="/docs/blueprints/03-flash-sale-engine"
+    description="Atomic Valkey Lua Reservation + SingleFlight + Token Bucket Limiter (50k req/s, zero negative stock)."
+  />
+  <Card
+    title="04. Distributed DB Sharding & Partitioning"
+    href="/docs/blueprints/04-distributed-db-sharding"
+    description="MurmurHash3 Single-Shard Router + 150-VNode Consistent Hash Ring (RF=3) + Compound Partitioning."
+  />
+  <Card
+    title="05. Twitter/X Hybrid Fanout Feed Engine"
+    href="/docs/blueprints/05-twitter-hybrid-feed"
+    description="Push-Write + Pull-Read + O(N log K) Binary Max-Heap Cursor Merger (20.6k to 1.2k req/s DB load)."
+  />
+  <Card
+    title="06. PostgreSQL Logical CDC Outbox"
+    href="/docs/blueprints/07-pg-cdc-outbox"
+    description="Native WAL Slot Replication + Idempotent LSN Tracker + Zero-Lock Partition Archiver (&lt; 5ms lag)."
+  />
+  <Card
+    title="07. Multi-Tenant SaaS Isolation & Snapshot"
+    href="/docs/blueprints/08-multitenant-snapshot"
+    description="Scoped Tenant Context + ORM RLS Filter + ABAC Policy Engine + Merkle Surgical Snapshot."
+  />
+  <Card
+    title="08. Double-Entry Financial Escrow & Idempotency"
+    href="/docs/blueprints/11-double-entry-fintech"
+    description="Immutable Ledger (Sum(Debit) = Sum(Credit)) + Atomic Recovery-Point Idempotency + Crypto Reconciliation."
+  />
+</Cards>
+
+---
+
+## 🏛️ The 3 Systems Pillars (8 Suites)
+
+<Cards>
+  <Card
+    title="1. Concurrency, Caching & Distributed Data (6 Suites)"
+    href="/docs/packages/02-concurrency-and-caching"
+    description="hot-counter, ai-stream, resilient-cache, db-sharding, hybrid-feed, and async-sync."
+  />
+  <Card
+    title="2. Security & Multi-Tenant Isolation (1 Suite)"
+    href="/docs/packages/01-security-and-isolation"
+    description="tenant-guard: Scoped tenant context, RLS query filtering, RBAC/ABAC, Merkle snapshots & sandbox."
+  />
+  <Card
+    title="3. FinTech & Immutable Ledger (1 Suite)"
+    href="/docs/packages/04-fintech-and-payments"
+    description="wallet-ledger: Double-entry escrow, atomic recovery-point idempotency, crypto matchers & portfolio NAV."
+  />
+</Cards>

@@ -1,0 +1,7 @@
+{
+  "title": "Security & Multi-Tenant Isolation",
+  "pages": [
+    "index",
+    "tenant-guard"
+  ]
+}

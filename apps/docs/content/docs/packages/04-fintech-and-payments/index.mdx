@@ -1,0 +1,83 @@
+---
+title: Pillar 3. FinTech & Immutable Double-Entry Ledger
+description: Immutable Double-Entry Escrow Ledgers, Stripe-Style Atomic Recovery-Point Idempotency, Stateless Crypto Micro-Decimal Reconciliation, and Portfolio NAV/WACB Analytics.
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Pillar 3. FinTech & Immutable Double-Entry Ledger
+
+> **Crown Jewel Suite: `@kido/wallet-ledger` — Python 3.12+ (`FastAPI / asyncio`) & TypeScript**  
+> Zero balance drift under retries, network partitions, and partial crashes via balanced double-entry accounting (`Sum(Debit) = Sum(Credit)`) and Stripe-style atomic recovery-point idempotency.
+
+---
+
+## 📦 Suite Catalog
+
+| Suite Name | Dedicated Guide | Architecture Paradigm & Core Exports |
+|---|---|---|
+| `@kido/wallet-ledger` | [Deep Dive & Dual-Language Spec](/docs/packages/04-fintech-and-payments/wallet-ledger) | **Double-Entry Escrow + Recovery-Point Idempotency + Crypto Matcher + Portfolio NAV**:<br/>• `WalletLedger`, `auditLedgerIntegrity`, `WithdrawalStateMachine`<br/>• `MicroDecimalAmountGenerator`, `CryptoTransactionMatcher`<br/>• `ReferralFraudGuard`, `executeWacbTransaction` |
+
+---
+
+## 🔍 Core FinTech Invariants
+
+1. **Zero-Drift Double-Entry Bookkeeping**: Every financial movement records paired balance transitions (`balanceBefore` -> `balanceAfter`) with strict `Sum(Debit) = Sum(Credit)` conservation and full replay verification (`auditLedgerIntegrity`).
+2. **Stripe-Style Atomic Recovery-Point Idempotency**: Every payment or settlement transitions monotonically through persisted recovery checkpoints (`started -> locked -> ledger_posted -> completed`). Crashes or client retries resume cleanly from the last committed checkpoint without double-charging or double-crediting.
+3. **Stateless Crypto Micro-Decimal Matching & Portfolio NAV**: Deterministic sub-cent micro-amount fingerprinting for on-chain deposit attribution alongside Weighted Average Cost Basis (WACB) portfolio tracking.
+
+<Callout title="🤖 Financial Safety Invariant">
+  Never mutate balances in place without an append-only ledger entry and an idempotency recovery key scoped to the caller mutation.
+</Callout>
+
+---
+
+## 💻 Polyglot Reference: Balanced Double-Entry & Idempotent Settlement
+
+<Tabs items={['Python (FastAPI / asyncio)', 'TypeScript (Zero-Dep Slice)']}>
+  <Tab value="Python (FastAPI / asyncio)">
+    ```python
+    from decimal import Decimal
+    from enum import StrEnum
+    from dataclasses import dataclass
+
+    class RecoveryPoint(StrEnum):
+        STARTED = "started"
+        LOCKED = "locked"
+        LEDGER_POSTED = "ledger_posted"
+        COMPLETED = "completed"
+
+    @dataclass(frozen=True, slots=True)
+    class JournalLine:
+        account_id: str
+        direction: str  # "DEBIT" | "CREDIT"
+        amount: Decimal
+
+    def verify_balanced_journal(lines: list[JournalLine]) -> None:
+        debits = sum((l.amount for l in lines if l.direction == "DEBIT"), Decimal("0"))
+        credits = sum((l.amount for l in lines if l.direction == "CREDIT"), Decimal("0"))
+        if debits <= 0 or debits != credits:
+            raise ValueError(f"Unbalanced journal entry: debits={debits}, credits={credits}")
+    ```
+  </Tab>
+  <Tab value="TypeScript (Zero-Dep Slice)">
+    ```typescript
+    import { WalletLedger } from '@kido/wallet-ledger';
+
+    const ledger = new WalletLedger();
+    ledger.createWallet('wal_01', 'usr_01', 'USD');
+
+    ledger.creditUseAccount({
+      walletId: 'wal_01',
+      amount: 250_00, // minor units (cents)
+      referenceType: 'ESCROW_DEPOSIT',
+      referenceId: 'ord_991',
+      idempotencyKey: 'idem_escrow_ord_991',
+    });
+
+    const audit = ledger.auditLedgerIntegrity('wal_01');
+    // audit.isValid === true
+    ```
+  </Tab>
+</Tabs>

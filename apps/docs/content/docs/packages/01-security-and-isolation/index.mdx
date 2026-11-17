@@ -1,0 +1,89 @@
+---
+title: Pillar 2. Security & Multi-Tenant Isolation
+description: Enterprise Multi-Tenant Context Isolation, Row-Level Security (RLS) Query Filtering, Dynamic RBAC/ABAC Guard, Merkle Surgical Snapshots, and Safe Demo Sandboxes.
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Pillar 2. Security & Multi-Tenant Isolation
+
+> **Crown Jewel Suite: `@kido/tenant-guard` — Python 3.12+ (`FastAPI / contextvars`) & TypeScript**  
+> Zero cross-tenant leakage via scoped context propagation, deterministic SQL/ORM Row-Level Security injection, dynamic RBAC/ABAC policy checks, tamper-evident Merkle snapshots, and sanitized demo sandboxes.
+
+---
+
+## 📦 Suite Catalog
+
+| Suite Name | Dedicated Guide | Architecture Paradigm & Core Exports |
+|---|---|---|
+| `@kido/tenant-guard` | [Deep Dive & Dual-Language Spec](/docs/packages/01-security-and-isolation/tenant-guard) | **Multi-Tenant Context + RLS Filter + RBAC/ABAC + Merkle Snapshot + Sandbox**:<br/>• `runWithTenantContext`, `requireTenantContext`, `buildTenantWhereClause`<br/>• `AuthorizationGuard`, `evaluateAbacPolicy`, `OrmCacheInterceptor`<br/>• `SurgicalSnapshotEngine`, `resolveDemoPersona`, `deepSanitize` |
+
+---
+
+## 🔍 Architecture Overview
+
+`@kido/tenant-guard` isolates B2B SaaS and franchise workloads across four defense-in-depth layers:
+
+1. **Scoped Request Context (`contextvars` / `AsyncLocalStorage`)**: Binds validated tenant and actor metadata to the active async execution graph without prop-drilling across service calls.
+2. **Row-Level Security (RLS) Query & Cache Filtering**: Validates SQL identifiers against strict allowlists, injects parameterized tenant/branch predicates (`buildTenantWhereClause`), and namespaces cache keys (`tenant:{id}:{key}`).
+3. **RBAC + ABAC Authorization Guard**: Evaluates role hierarchies alongside attribute-based resource ownership rules.
+4. **Merkle Snapshot & Demo Sandbox**: Generates SHA-256 checksummed workspace snapshots and redacts sensitive PII fields deterministically for safe public demos.
+
+<Callout title="🤖 Zero-Trust Invariant">
+  Missing tenant context MUST fail closed (`TenantContextMissingError` / HTTP 403), never fall back to an unfiltered query.
+</Callout>
+
+---
+
+## 💻 Polyglot Reference: Scoped Tenant Context + Fail-Closed RLS Guard
+
+<Tabs items={['Python (FastAPI / asyncio)', 'TypeScript (Zero-Dep Slice)']}>
+  <Tab value="Python (FastAPI / asyncio)">
+    ```python
+    from contextvars import ContextVar
+    from dataclasses import dataclass
+    from fastapi import HTTPException, status
+
+    @dataclass(frozen=True, slots=True)
+    class TenantContext:
+        tenant_id: str
+        branch_id: str | None = None
+        actor_id: str | None = None
+
+    _tenant_ctx: ContextVar[TenantContext | None] = ContextVar("tenant_ctx", default=None)
+
+    def require_tenant_context() -> TenantContext:
+        ctx = _tenant_ctx.get()
+        if ctx is None or not ctx.tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Operation rejected: active TenantContext is required",
+            )
+        return ctx
+
+    def build_tenant_where_clause(ctx: TenantContext) -> tuple[str, list[str]]:
+        if ctx.branch_id:
+            return "tenant_id = $1 AND branch_id = $2", [ctx.tenant_id, ctx.branch_id]
+        return "tenant_id = $1", [ctx.tenant_id]
+    ```
+  </Tab>
+  <Tab value="TypeScript (Zero-Dep Slice)">
+    ```typescript
+    import {
+      runWithTenantContext,
+      requireTenantContext,
+      buildTenantWhereClause,
+    } from '@kido/tenant-guard';
+
+    export async function listScopedInvoices(tenantId: string, branchId?: string) {
+      return await runWithTenantContext({ tenantId, branchId }, async () => {
+        const ctx = requireTenantContext();
+        const where = buildTenantWhereClause(ctx);
+        // Execute parameterized SQL query using where.clause and where.params
+        return where;
+      });
+    }
+    ```
+  </Tab>
+</Tabs>
