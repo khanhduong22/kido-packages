@@ -9,6 +9,7 @@ import {
   calculatePortfolioRiskMetrics,
   downsampleChartLabels,
   L1QuoteSnapshotCache,
+  type PortfolioState,
 } from './index';
 
 describe('@kido/wallet-ledger Test Suite', () => {
@@ -403,7 +404,7 @@ describe('@kido/wallet-ledger Test Suite', () => {
   // -------------------------------------------------------------
   describe('5. Portfolio NAV Valuation, WACB Ledger & Risk Metrics', () => {
     it('5.1 should compute Weighted Average Cost Basis (WACB) across BUY and SELL transactions', () => {
-      let state = {
+      let state: PortfolioState = {
         cashBalance: 100_000_000,
         holdings: [],
       };

@@ -314,14 +314,16 @@ export function createExtensionZipBuffer(extensionDirPath?: string): Buffer {
 }
 
 /**
- * Lightweight Hono middleware helper for extracting and injecting Gemini cookies.
+ * Lightweight Hono middleware helper for extracting and injecting Gemini cookies into request context.
+ * Strictly avoids mutating global process.env on incoming HTTP requests to prevent race conditions
+ * and cross-tenant credential poisoning.
  */
 export function createHonoCookieSyncMiddleware(options: {
   headerName?: string;
   autoSyncEnv?: boolean;
 } = {}) {
   const headerName = options.headerName ?? COOKIE_HEADER_NAME;
-  const autoSyncEnv = options.autoSyncEnv ?? true;
+  const autoSyncEnv = options.autoSyncEnv ?? false;
 
   return async function cookieSyncMiddleware(
     c: {

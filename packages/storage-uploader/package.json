@@ -17,7 +17,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx src/index.test.ts"
+    "test": "node --test --import tsx src/index.test.ts src/tiered-lifecycle/index.test.ts"
   },
   "dependencies": {
     "zod": "^3.24.2"

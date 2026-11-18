@@ -1,7 +1,7 @@
 # @kido/storage-uploader
 
 > **Universal Object Storage Uploader, SigV4 Presigner & Budget Guard Suite**  
-> Pure Web Crypto AWS SigV4 Presigned URL Generator (AWS S3 & Cloudflare R2), Multi-Format Image Dimension/Aspect Ratio Validator, Cloudflare R2 $0 Budget Circuit Breaker, and GarageHQ Distributed Self-Hosted S3 Storage Key Guard.
+> Pure Web Crypto AWS SigV4 Presigned URL Generator (AWS S3 & Cloudflare R2), Multi-Format Image Dimension/Aspect Ratio Validator, Cloudflare R2 $0 Budget Circuit Breaker, GarageHQ Distributed Self-Hosted S3 Storage Key Guard, and 3-Tier Zero-Cost Storage Lifecycle & Cold AVIF Archiver (`Cloudflare R2 Free 10GB -> Local NVMe SSD -> Local Cold HDD AVIF`).
 
 ---
 
@@ -152,6 +152,57 @@ export async function requestDirectUploadUrl(req: {
 
 ---
 
+### 3. Tier-3 Zero-Cost Lifecycle & Cold AVIF Archiver (`src/tiered-lifecycle/`)
+Automated multi-tier storage waterfall transitioning from Cloudflare R2 Free Tier (`<= 8.5 GiB`, $0 cloud egress) to Local NVMe SSD (Warm Tier: active 30–90 days) and Cold HDD Archive (> 90 days) with imgproxy AVIF cold compression (~78% storage reclaimed):
+
+```typescript
+import {
+  resolveUploadTargetTier,
+  planLifecycleTransitions,
+  buildImgproxyColdTranscodeUrl,
+  resolveWaterfallAssetUrls,
+  type StorageObjectMeta,
+} from '@kido/storage-uploader';
+
+// 1. Placement Router on Upload: Automatically falls back to local SSD if R2 crosses 8.5 GiB safety threshold
+const uploadTarget = resolveUploadTargetTier({
+  incomingFileBytes: 4 * 1024 * 1024, // 4MB upload
+  r2CurrentUsedBytes: 8.4 * 1024 * 1024 * 1024, // 8.4GB used in R2
+});
+console.log(uploadTarget.targetTier); // 'r2_hot' (or 'ssd_warm' when cap tripped)
+
+// 2. Nightly Lifecycle Archiver: Demote inactive R2 files & transcode warm SSD files to Cold HDD AVIF
+const inventory: StorageObjectMeta[] = [
+  {
+    key: 'catalog/vintage-hero.jpg',
+    sizeBytes: 8 * 1024 * 1024,
+    mimeType: 'image/jpeg',
+    createdAtMs: Date.now() - 100 * 24 * 60 * 60 * 1000, // 100 days old
+    currentTier: 'ssd_warm',
+  },
+];
+
+const plan = planLifecycleTransitions(inventory, {
+  imgproxyBaseUrl: 'https://imgproxy.internal',
+});
+
+for (const archive of plan.archivesToCold) {
+  console.log(`Transcode URL: ${archive.imgproxyTranscodeUrl}`);
+  // -> https://imgproxy.internal/unsafe/rs:fit:1600:1600:0/q:72/plain/catalog/vintage-hero.jpg@avif
+  console.log(`Reclaimed SSD: ${archive.originalSizeBytes}B -> HDD: ${archive.estimatedCompressedSizeBytes}B`);
+}
+
+// 3. Deterministic 3-Tier Waterfall URL Resolution (R2 -> SSD -> HDD)
+const [r2Url, ssdUrl, hddUrl] = resolveWaterfallAssetUrls('catalog/vintage-hero.jpg', {
+  r2PublicBaseUrl: 'https://cdn.example.com',
+  ssdBaseUrl: 'https://garage.internal/media',
+  hddBaseUrl: 'https://cold.internal/media',
+  cdnProxyBaseUrl: 'https://media.khanhdp.com',
+});
+```
+
+---
+
 ## 📦 Features Breakdown
 
 1. **Pure Web Crypto SigV4**: Generates RFC-compliant AWS SigV4 presigned PUT URLs in < 1ms on Node.js, Bun, Cloudflare Workers, and Vercel Edge with zero heavy AWS SDK dependencies.
@@ -159,3 +210,4 @@ export async function requestDirectUploadUrl(req: {
 3. **Cloudflare R2 $0 Budget Circuit Breaker**: Real-time evaluation of current storage volume against Cloudflare's 10GB free tier and operation caps.
 4. **GarageHQ S3 Key Guard**: Enforces strict GK+24hex key structure validation for self-hosted distributed NVMe S3 clusters.
 5. **Cloudinary SaaS Adapter**: Out-of-the-box integration for on-the-fly thumbnail generation and responsive image transformations.
+6. **3-Tier Zero-Cost Storage Lifecycle & Cold AVIF Archiver (`src/tiered-lifecycle/`)**: Automated multi-tier waterfall from Cloudflare R2 Free Tier (`<= 8.5 GiB`, $0 egress) to Local NVMe SSD Warm Tier (30–90 days), and Cold HDD Archive (> 90 days) with imgproxy AVIF/WebP cold transcoding (~78% storage savings).

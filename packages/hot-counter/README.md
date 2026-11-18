@@ -6,6 +6,7 @@
 > 2. **Tier-0 SME Zero-Infra (`Tier0SmeCounter`)**: In-process `Map<string, number>` + single-statement PostgreSQL/SQLite `INSERT ... ON CONFLICT DO UPDATE` batch flusher cho VPS $5/tháng (< 2,000 writes/s, $0 Redis/Kafka cost).
 > 3. **Tier-1 Growth (`SlottedCounter`)**: 16-slot sharded row counter nhân 16x độ chịu tải ghi trực tiếp PostgreSQL kết hợp fallback `FOR UPDATE SKIP LOCKED`.
 > 4. **Tier-2 Big-Tech (`ValkeyWriteBehindCounter`)**: Distributed Valkey `HINCRBY` + Atomic Lua Drain (`LUA_ATOMIC_DRAIN_HASH`) đạt 100,000+ ops/s cho cụm đa container.
+> 5. **YouTube Hybrid View Engine & Datastore Adaptive Slot Sizer (`YouTubeHybridViewEngine`)**: Giải quyết trọn vẹn Màn 24 GonnaCrash (`counter_at_scale`): Thuật toán tính cỡ slot tối ưu (`calculateOptimalSlotCount`, giải bài toán cân bằng Row Lock vs Đọc `SUM`), `HyperLogLogCounter` (đếm Unique Viewers trong 1 KB RAM), và cơ chế đóng băng view ảo chống F5 bot ở mốc 301 views của YouTube.
 
 ---
 
@@ -191,15 +192,66 @@ const counterInstance = createProgressiveHotCounter({
 });
 ```
 
+### 5. Màn 24 GonnaCrash: Datastore Adaptive Slot Sizer & YouTube Hybrid View Engine
+
+```typescript
+import {
+  calculateOptimalSlotCount,
+  HyperLogLogCounter,
+  YouTubeHybridViewEngine,
+} from "@kido/hot-counter";
+
+// 1. Tự động tính cỡ Slot tối ưu (Chứng minh toán học Level 24)
+// Viết 700 req/s, Đọc dashboard 100 req/s, Trần row 200/s, Trần DB Tier L 1.500/s
+const sizing = calculateOptimalSlotCount({
+  writeRatePerS: 700,
+  readRatePerS: 100,
+  maxWritesPerRowPerS: 200,
+  maxDbCapacityPerS: 1500,
+  candidateSlots: [1, 4, 16],
+});
+
+console.log(sizing.recommendedSlots); // 4 (Split 4)
+// -> Split 1: 700 writes/row/s > 200 (sập khóa dòng)
+// -> Split 16: 700 + (16 * 100) = 2.300 req/s > 1.500 (sập tải đọc DB)
+// -> Split 4: 175 writes/row/s và 700 + (4 * 100) = 1.100 req/s <= 1.500 (TỐI ƯU!)
+
+// 2. HyperLogLog độc lập (1 KB RAM, sai số < 3% trên 5.000 unique viewers)
+const hll = new HyperLogLogCounter(10); // p = 10 -> m = 1,024 registers
+hll.add("viewer_alice");
+hll.add("viewer_bob");
+console.log(hll.count()); // 2
+
+// 3. YouTube Hybrid View Engine (Sharded Counter + HLL Anti-F5 Spam Audit)
+const engine = new YouTubeHybridViewEngine({
+  viralFreezeThreshold: 300, // Mô phỏng mốc 301 views huyền thoại
+  maxViewsPerUniqueViewerRatio: 10,
+  numSlots: 4, // Split 4 tối ưu
+});
+
+// Ghi nhận lượt xem (Tự băm slot và feed vào HLL)
+engine.recordView("mv_sontung", "viewer_1");
+
+// Nếu 1 bot user F5 liên tục 500 lần:
+// - rawTotalViews: 500
+// - verifiedPublicViews: 300 (ĐÓNG BĂNG tại mốc 300, chặn 200 view ảo!)
+// - estimatedUniqueViewers: 1
+// - isSuspectedBotAttack: true
+const metrics = engine.getVideoMetrics("mv_sontung");
+```
+
 ---
 
-## 🧪 Kiểm Thử Toàn Diện (34 Unit & Concurrency Tests)
+## 🧪 Kiểm Thử Toàn Diện (48 Unit & Concurrency Tests)
 
 ```bash
 bun test packages/hot-counter
-# 34 pass, 0 fail (64ms)
+# 48 pass, 0 fail (158ms)
 ```
 
+- **Level 24 Adaptive Slot Sizer**: Chứng minh toán học `Split 4` tối ưu (`1,100 req/s`), `Split 1` sập do row-lock (`700 > 200`), `Split 16` sập do khuếch đại đọc `SUM` (`2,300 > 1,500`).
+- **HyperLogLog Cardinality Accuracy**: Sai số $< 3\%$ trên 5,000 unique viewers, bảo toàn tính lũy đẳng (1 viewer bấm 1,000 lần cho kết quả `count === 1`), và merge không mất mát.
+- **YouTube 301-View Freeze & Bot Defense**: 1 bot F5 500 lần $\to$ `rawTotalViews = 500`, `verifiedPublicViews = 300` (đóng băng tại trần), `estimatedUniqueViewers = 1`, `isSuspectedBotAttack = true`. Traffic hữu cơ 1,200 views $\to$ xác minh 100% không bị đóng băng.
 - **Tier-0 SME UPSERT & Batching**: Xác thực cú pháp PostgreSQL / SQLite UPSERT và bảo toàn 100% dữ liệu khi DB lỗi kết nối (Zero Lost Updates).
 - **Naive Contention Simulator**: Đo lường thực nghiệm hàng chờ tuple lock nối tiếp và độ trễ P95 bùng nổ khi thiếu tầng gom đệm.
 - **MicroBatchCoalescer Throughput**: 10,000 ops xử lý trong **1.04ms** (> 9,000,000 ops/giây trong RAM).

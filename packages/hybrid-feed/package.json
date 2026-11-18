@@ -1,0 +1,29 @@
+{
+  "name": "@kido/hybrid-feed",
+  "version": "1.0.0",
+  "description": "Tier-1 Big-Tech Hybrid Fanout Feed, K-Way Binary Max-Heap Cursor Merger & Valkey Capped Timeline Mixer (Twitter/X & GonnaCrash Level 22 Architecture)",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup || (bun build src/index.ts --outfile dist/index.js --format cjs --target node && bun build src/index.ts --outfile dist/index.mjs --format esm --target node && bunx --bun tsc --emitDeclarationOnly --outDir ./dist)",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit || bunx --bun tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

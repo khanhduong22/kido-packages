@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { extractOrderCode } from './sepay';
 import { ParsedWebhookResult, PayosWebhookData, PayosWebhookPayload, PayosWebhookPayloadSchema } from './types';
 
@@ -31,16 +31,25 @@ export function createPayosSignature(data: Record<string, any>, checksumKey: str
 }
 
 /**
- * Verifies PayOS webhook signature
+ * Verifies PayOS webhook signature using timing-safe comparison
  */
 export function verifyPayosSignature(
   data: Record<string, any>,
   signature: string,
   checksumKey: string
 ): boolean {
-  if (!signature || !checksumKey) return false;
+  if (!signature || !checksumKey || typeof checksumKey !== 'string' || !checksumKey.trim()) {
+    return false;
+  }
   const calculated = createPayosSignature(data, checksumKey);
-  return calculated.toLowerCase() === signature.trim().toLowerCase();
+  const calculatedBuf = Buffer.from(calculated.toLowerCase(), 'utf8');
+  const signatureBuf = Buffer.from(signature.trim().toLowerCase(), 'utf8');
+
+  if (calculatedBuf.length !== signatureBuf.length) {
+    return false;
+  }
+
+  return timingSafeEqual(calculatedBuf, signatureBuf);
 }
 
 /**
@@ -70,24 +79,39 @@ export function parsePayosWebhook(
   const payload: PayosWebhookPayload = parseResult.data;
   const data: PayosWebhookData = payload.data;
 
-  // Verify signature if checksumKey provided
-  if (options.checksumKey) {
-    const isValidSignature = verifyPayosSignature(data, payload.signature, options.checksumKey);
-    if (!isValidSignature) {
-      return {
-        isValid: false,
-        provider: 'payos',
-        orderCode: String(data.orderCode),
-        amount: data.amount,
-        content: data.description,
-        transactionId: data.reference,
-        bank: data.counterAccountBankName || 'Unknown Bank',
-        accountNumber: data.accountNumber,
-        transactionDate: data.transactionDateTime,
-        raw: rawBody,
-        error: 'Invalid PayOS HMAC signature'
-      };
-    }
+  // 1. Enforce fail-closed check: checksumKey is strictly required
+  if (!options.checksumKey || typeof options.checksumKey !== 'string' || !options.checksumKey.trim()) {
+    return {
+      isValid: false,
+      provider: 'payos',
+      orderCode: String(data.orderCode),
+      amount: data.amount,
+      content: data.description,
+      transactionId: data.reference,
+      bank: data.counterAccountBankName || 'Unknown Bank',
+      accountNumber: data.accountNumber,
+      transactionDate: data.transactionDateTime,
+      raw: rawBody,
+      error: 'Missing required checksumKey: PayOS signature verification failed closed'
+    };
+  }
+
+  // 2. Timing-safe signature verification
+  const isValidSignature = verifyPayosSignature(data, payload.signature, options.checksumKey);
+  if (!isValidSignature) {
+    return {
+      isValid: false,
+      provider: 'payos',
+      orderCode: String(data.orderCode),
+      amount: data.amount,
+      content: data.description,
+      transactionId: data.reference,
+      bank: data.counterAccountBankName || 'Unknown Bank',
+      accountNumber: data.accountNumber,
+      transactionDate: data.transactionDateTime,
+      raw: rawBody,
+      error: 'Invalid PayOS HMAC signature'
+    };
   }
 
   // Check if status is success

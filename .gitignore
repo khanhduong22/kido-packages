@@ -42,3 +42,8 @@ Thumbs.db
 # Testing & Coverage
 coverage
 .nyc_output
+
+# Local runtime fixtures & private app workspaces
+/data/
+/apps/*
+!/apps/docs/

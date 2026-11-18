@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import { ParsedWebhookResult, SepayWebhookPayload, SepayWebhookPayloadSchema } from './types';
 
 export interface SepayWebhookOptions {
@@ -33,20 +34,30 @@ export function extractOrderCode(
 }
 
 /**
- * Verifies SePay Webhook Authorization Header
+ * Verifies SePay Webhook Authorization Header using timing-safe comparison.
+ * Fails closed if expectedApiKey is missing or empty.
  * SePay sends header: "Authorization: Apikey <API_KEY>" or "Authorization: Bearer <API_KEY>"
  */
 export function verifySepayAuthorization(
   authHeader: string | null | undefined,
   expectedApiKey: string
 ): boolean {
-  if (!expectedApiKey) return true;
-  if (!authHeader) return false;
+  if (!expectedApiKey || typeof expectedApiKey !== 'string' || !expectedApiKey.trim()) {
+    return false;
+  }
+  if (!authHeader || typeof authHeader !== 'string') return false;
 
   const cleanHeader = authHeader.trim();
   const token = cleanHeader.replace(/^(Apikey|Bearer)\s+/i, '').trim();
 
-  return token === expectedApiKey.trim();
+  const expectedBuf = Buffer.from(expectedApiKey.trim(), 'utf8');
+  const actualBuf = Buffer.from(token, 'utf8');
+
+  if (expectedBuf.length !== actualBuf.length) {
+    return false;
+  }
+
+  return timingSafeEqual(expectedBuf, actualBuf);
 }
 
 /**
@@ -58,7 +69,7 @@ export function parseSepayWebhook(
   options: SepayWebhookOptions = {}
 ): ParsedWebhookResult {
   // 1. Verify authorization header if API Key is configured
-  if (options.apiKey) {
+  if (options.apiKey !== undefined) {
     const isAuthorized = verifySepayAuthorization(authHeader, options.apiKey);
     if (!isAuthorized) {
       return {

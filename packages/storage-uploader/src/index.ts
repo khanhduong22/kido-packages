@@ -16,3 +16,6 @@ export * from './adapters/local-mock';
 
 // 4. R2 $0 Budget Circuit Breaker & GarageHQ S3 Key Guard
 export * from './budget-guard';
+
+// 5. 3-Tier Zero-Cost Storage Lifecycle & Cold AVIF Archiver
+export * from './tiered-lifecycle';

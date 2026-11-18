@@ -1,0 +1,37 @@
+{
+  "name": "@kido/async-sync",
+  "version": "1.0.0",
+  "description": "Asynchronous Data Sync, PostgreSQL Logical WAL CDC Stream, LSN Replication Monitor, Declarative Partition Archiver, Litestream PITR & UUIDv7 Outbox Suite",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    },
+    "./pg-cdc-stream": {
+      "types": "./dist/pg-cdc-stream/index.d.ts",
+      "import": "./dist/pg-cdc-stream/index.mjs",
+      "require": "./dist/pg-cdc-stream/index.js",
+      "default": "./src/pg-cdc-stream/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx src/index.test.ts src/litestream-pitr/index.test.ts src/pg-replication/index.test.ts src/pg-partition-archiver/index.test.ts src/pg-cdc-stream/index.test.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

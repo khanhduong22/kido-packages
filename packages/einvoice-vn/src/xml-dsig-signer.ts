@@ -1,5 +1,5 @@
 import * as crypto from 'node:crypto';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -372,9 +372,27 @@ export function generateSelfSignedCert(options?: {
 
   try {
     const subj = `/CN=${commonName}/O=${org}/C=VN`;
-    execSync(`openssl req -x509 -newkey rsa:2048 -nodes -keyout "${keyPath}" -out "${certPath}" -days ${days} -subj "${subj}"`, {
-      stdio: 'ignore',
-    });
+    execFileSync(
+      'openssl',
+      [
+        'req',
+        '-x509',
+        '-newkey',
+        'rsa:2048',
+        '-nodes',
+        '-keyout',
+        keyPath,
+        '-out',
+        certPath,
+        '-days',
+        String(days),
+        '-subj',
+        subj,
+      ],
+      {
+        stdio: 'ignore',
+      }
+    );
 
     const privateKeyPem = fs.readFileSync(keyPath, 'utf8');
     const certificatePem = fs.readFileSync(certPath, 'utf8');

@@ -11,6 +11,7 @@ import {
   parseUnifiedWebhook,
   resolveBank,
   createPayosSignature,
+  verifySepayAuthorization,
 } from './index';
 
 test('resolveBank resolves by code, shortName and bin', () => {
@@ -112,6 +113,12 @@ test('parseSepayWebhook validates payload and extracts order code', () => {
   assert.strictEqual(resBadAuth.isValid, false);
   assert.ok(resBadAuth.error?.includes('Unauthorized'));
 
+  // Fail-closed test: missing or empty expectedApiKey must return false
+  assert.strictEqual(verifySepayAuthorization('Apikey some_key', ''), false);
+  assert.strictEqual(verifySepayAuthorization('Apikey some_key', undefined as any), false);
+  assert.strictEqual(verifySepayAuthorization('', 'my_secret_key'), false);
+  assert.strictEqual(verifySepayAuthorization('Apikey my_secret_key', 'my_secret_key'), true);
+
   // Ignores outgoing transfer
   const outBody = { ...webhookBody, transferType: 'out' };
   const resOut = parseSepayWebhook(outBody);
@@ -147,6 +154,19 @@ test('parsePayosWebhook validates HMAC signature and order data', () => {
   assert.strictEqual(result.orderCode, '8899');
   assert.strictEqual(result.amount, 250000);
   assert.strictEqual(result.transactionId, 'REF889900');
+
+  // Fail-closed test: missing checksumKey must return isValid: false
+  const missingKeyResult = parsePayosWebhook(payload);
+  assert.strictEqual(missingKeyResult.isValid, false);
+  assert.ok(missingKeyResult.error?.includes('Missing required checksumKey'));
+
+  // Fail-closed test: empty string checksumKey must return isValid: false
+  const emptyKeyResult = parsePayosWebhook(payload, { checksumKey: '' });
+  assert.strictEqual(emptyKeyResult.isValid, false);
+
+  // Timing-safe test: invalid signature must return isValid: false
+  const badSigResult = parsePayosWebhook({ ...payload, signature: 'invalid_signature_hex_123' }, { checksumKey });
+  assert.strictEqual(badSigResult.isValid, false);
 });
 
 test('parseUnifiedWebhook automatically detects SePay and PayOS', () => {

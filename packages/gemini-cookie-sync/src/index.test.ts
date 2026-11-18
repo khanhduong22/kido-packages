@@ -205,8 +205,11 @@ describe('@kido/gemini-cookie-sync Suite', () => {
       assert.ok(eocdIndex > 0, 'Must have valid EOCD marker');
     });
 
-    test('createHonoCookieSyncMiddleware extracts cookies and sets context', async () => {
-      const middleware = createHonoCookieSyncMiddleware({ autoSyncEnv: false });
+    test('createHonoCookieSyncMiddleware extracts cookies and sets context without mutating process.env by default', async () => {
+      const originalEnvValue = process.env.SECURE_1PSID;
+      delete process.env.SECURE_1PSID;
+
+      const middleware = createHonoCookieSyncMiddleware(); // default autoSyncEnv = false
       const store: Record<string, unknown> = {};
       const mockContext = {
         req: {
@@ -229,6 +232,11 @@ describe('@kido/gemini-cookie-sync Suite', () => {
 
       assert.equal(nextCalled, true);
       assert.deepEqual(store.geminiCookies, { '__Secure-1PSID': 'hono-psid' });
+      assert.strictEqual(process.env.SECURE_1PSID, undefined, 'Default middleware must not mutate global process.env');
+
+      if (originalEnvValue !== undefined) {
+        process.env.SECURE_1PSID = originalEnvValue;
+      }
     });
   });
 
