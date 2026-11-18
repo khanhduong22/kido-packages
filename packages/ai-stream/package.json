@@ -1,0 +1,41 @@
+{
+  "name": "@kido/ai-stream",
+  "version": "1.0.0",
+  "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing & RPM/TPM Rate Guard Suite (GonnaCrash Level 02 faster_answers & Level 03 rpm_ceiling)",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./src/index.ts"
+    },
+    "./rpm-rate-guard": {
+      "types": "./dist/rpm-rate-guard.d.ts",
+      "import": "./dist/rpm-rate-guard.mjs",
+      "require": "./dist/rpm-rate-guard.js",
+      "default": "./src/rpm-rate-guard/index.ts"
+    },
+    "./rag-security-guard": {
+      "types": "./dist/rag-security-guard.d.ts",
+      "import": "./dist/rag-security-guard.mjs",
+      "require": "./dist/rag-security-guard.js",
+      "default": "./src/rag-security-guard/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --import tsx src/index.test.ts src/rag-security-guard/index.test.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsup": "^8.4.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3"
+  }
+}

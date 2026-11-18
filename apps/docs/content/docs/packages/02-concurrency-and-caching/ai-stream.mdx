@@ -90,6 +90,11 @@ flowchart TD
 - `computeFullJitterBackoffMs(options)` & `computeDecorrelatedJitterMs(options)`: AWS/Stripe-standard jitter backoff eliminating 100% of retry storms.
 - `executeWithAiRateGuard(operation, options)`: Execution wrapper with automated `Retry-After` / `retry-after-ms` / `x-ratelimit-reset-*` header parsing.
 
+### 5. RAG Security Guard & Streaming DLP (`src/rag-security-guard/`)
+- `redactCredentialsDlp(text)` & `StreamingDlpRedactor`: 18-rule credential scrubber with a sliding tail holdback buffer so secrets split across 1-byte or arbitrary SSE chunks (`whsec_*`, `sk_live_*`, JWTs, `.env` keys, DB URIs) are redacted before emission while preserving standard HTTPS archive links.
+- `FailClosedScopeResolver<TScope>` & `classifyZeroCostIntent(query, options)`: Fail-closed TTL-cached scope/channel ACL resolver with `pinToCurrentScope` (anti-keyword hijack) and zero-cost short-circuiting for greetings, capability probes, and interactive fallback placeholders.
+- `escapeBoundaryTags`, `wrapUntrustedRagContext`, `detectPromptOverrideAttempt`, `clampMessageAtBoundary`, `SAFE_UPSTREAM_UNAVAILABLE_MESSAGE`, & `ProgressiveMessageEditThrottler` (`streamToEditableMessage`): XML delimiter hardening, prompt-override detection, and throttled editable-message streaming with fail-closed fallback on `503`/upstream errors.
+
 ---
 
 ## 💻 Code Implementation
@@ -381,11 +386,12 @@ npx kido-bag add rpm-rate-guard
   <Tab value="Surgical Slice Extraction">
 
 ```bash
-# Extract only the edge headers, SSE protocol, and rate guard
+# Extract only the edge headers, SSE protocol, rate guard, and RAG security guard
 mkdir -p src/lib/ai-stream
 cp packages/ai-stream/src/edge-flush-headers.ts src/lib/ai-stream/
 cp packages/ai-stream/src/sse-protocol.ts src/lib/ai-stream/
 cp -r packages/ai-stream/src/rpm-rate-guard/ src/lib/ai-stream/rpm-rate-guard/
+cp -r packages/ai-stream/src/rag-security-guard/ src/lib/ai-stream/rag-security-guard/
 ```
 
   </Tab>
