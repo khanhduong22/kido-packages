@@ -399,6 +399,46 @@ Bộ thành phần giao diện nền tảng:
 - `Popover`, `PopoverTrigger`, `PopoverContent`
 - `Breadcrumb`, `BreadcrumbList`, `BreadcrumbItem`, `BreadcrumbLink`, `BreadcrumbPage`, `BreadcrumbSeparator`
 
+### 7. shadcn AI Elements (`ChainOfThought`, `TraceLine`, `SourcesCitation`)
+Bộ UI components tương tác cho AI Chat, Agent Reasoning, và 3-Tier RAG Pipeline:
+- **`ChainOfThought`**: Khung collapsible trực quan hóa luồng suy nghĩ của AI agent:
+  - Hiệu ứng nhấp nháy động (`isThinking={true}`, `pulse={true}`) và đếm thời gian thực (`durationSeconds={1.2}` -> "Thought for 1.2s").
+  - Huy hiệu đếm số bước reasoning (`3 steps`).
+  - Hỗ trợ dữ liệu mảng cấu trúc (`steps: ChainOfThoughtStep[]`) hoặc compound children.
+- **`TraceLine`**: Từng bước thực thi chi tiết với icon chuyên dụng (`search`, `rerank`, `prune`, `filter`, `embed`, `reason`, `tool`, `custom`), trạng thái (`running` spinner, `completed` check, `error` alert), và chi tiết mở rộng (`details` / `output`).
+- **`SourcesCitation`**: Hiển thị nguồn trích dẫn / sản phẩm tìm kiếm với 2 chế độ:
+  - `variant="chips"`: Các pill nhỏ gọn chứa icon loại nguồn, tiêu đề, link mở tab mới và badge điểm tương đồng (`SourceScoreBadge`).
+  - `variant="collapsible"`: Danh sách thẻ chi tiết với trích đoạn nội dung (`snippet`), đường dẫn file, mã chunk và định dạng giá tiền VND.
+- **`SourceScoreBadge`**: Huy hiệu điểm số tự động phân tầng màu sắc (Emerald >= 80%, Sky >= 65%, Amber < 65%).
+
+```tsx
+import { ChainOfThought, TraceLine, SourcesCitation } from '@kido/admin-ui';
+
+// 1. Chain-of-Thought Reasoning
+<ChainOfThought
+  isThinking={isLoading}
+  durationSeconds={elapsedSec}
+  title={isLoading ? 'Aria is thinking...' : 'Thought for 1.2s'}
+  steps={[
+    { title: 'Broad Recall (20 candidates)', stepType: 'search', status: 'completed', durationMs: 120 },
+    { title: 'Cross-Encoder Reranking', stepType: 'rerank', status: 'completed', durationMs: 340 },
+    { title: 'Pruning: Top 4 Art Supplies', stepType: 'prune', status: 'completed', durationMs: 15 },
+  ]}
+/>
+
+// 2. Sources Citation Pills
+<SourcesCitation
+  variant="chips"
+  sources={matchedProducts.map((p) => ({
+    id: p.id,
+    title: p.name,
+    score: p.relevanceScore,
+    sourceType: 'product',
+    url: `/products/${p.slug}`,
+  }))}
+/>
+```
+
 ---
 
 ## 🛠 Lệnh phát triển & Kiểm thử

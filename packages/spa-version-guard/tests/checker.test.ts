@@ -463,7 +463,7 @@ describe('@kido/spa-version-guard Test Suite', () => {
     const mockRelease = {
       version: 'v2.2.0',
       releaseDate: '10/10/2026',
-      title: 'Winter Arc Update v2.2',
+      title: 'Enterprise Portal Update v2.2',
       subtitle: 'Complete Experience & Historical Lookup',
       changes: [
         {
@@ -501,7 +501,7 @@ describe('@kido/spa-version-guard Test Suite', () => {
       expect(html).toContain('role="dialog"');
       expect(html).toContain('PHIÊN BẢN');
       expect(html).toContain('v2.2.0');
-      expect(html).toContain('Winter Arc Update v2.2');
+      expect(html).toContain('Enterprise Portal Update v2.2');
       expect(html).toContain('Viết Bù &amp; Sửa Nhật Ký 14 Ngày');
       expect(html).toContain('MỚI • v2.2');
       expect(html).toContain('KHÁM PHÁ NGAY');

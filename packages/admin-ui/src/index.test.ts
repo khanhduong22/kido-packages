@@ -54,6 +54,20 @@ import {
   Popover,
   Skeleton,
   Separator,
+  // AI Elements
+  ChainOfThought,
+  Trace,
+  TraceLine,
+  TraceIcon,
+  TraceTitle,
+  TraceDescription,
+  TraceCollapsible,
+  TraceCollapsibleTrigger,
+  TraceCollapsibleContent,
+  SourcesCitation,
+  SourceScoreBadge,
+  SourceChip,
+  SourceCard,
 } from './index';
 
 describe('@kido/admin-ui Package Test Suite', () => {
@@ -240,6 +254,22 @@ describe('@kido/admin-ui Package Test Suite', () => {
       assert.ok(AdminHeader, 'AdminHeader should be defined');
       assert.ok(useAdminShell, 'useAdminShell should be defined');
       assert.equal(AdminShell, AdminLayout, 'AdminShell should alias AdminLayout');
+    });
+
+    it('should properly export all AI Elements (Chain-of-Thought, Trace, SourcesCitation)', () => {
+      assert.ok(ChainOfThought, 'ChainOfThought should be defined');
+      assert.ok(Trace, 'Trace should be defined');
+      assert.ok(TraceLine, 'TraceLine should be defined');
+      assert.ok(TraceIcon, 'TraceIcon should be defined');
+      assert.ok(TraceTitle, 'TraceTitle should be defined');
+      assert.ok(TraceDescription, 'TraceDescription should be defined');
+      assert.ok(TraceCollapsible, 'TraceCollapsible should be defined');
+      assert.ok(TraceCollapsibleTrigger, 'TraceCollapsibleTrigger should be defined');
+      assert.ok(TraceCollapsibleContent, 'TraceCollapsibleContent should be defined');
+      assert.ok(SourcesCitation, 'SourcesCitation should be defined');
+      assert.ok(SourceScoreBadge, 'SourceScoreBadge should be defined');
+      assert.ok(SourceChip, 'SourceChip should be defined');
+      assert.ok(SourceCard, 'SourceCard should be defined');
     });
   });
 });

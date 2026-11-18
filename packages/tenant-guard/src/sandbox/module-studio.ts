@@ -46,7 +46,7 @@ export const DEMO_MODULE_METADATA: readonly ModuleDefinition[] = [
   },
   {
     key: 'ai_sop',
-    label: 'Trợ lý AI Nội quy (Capy RAG + TTS)',
+    label: 'Trợ lý AI Nội quy (AI Knowledge RAG + TTS)',
     description: 'Hỏi đáp quy trình vận hành cửa hàng bằng AI & giọng đọc TTS',
   },
 ] as const;

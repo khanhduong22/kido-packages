@@ -71,3 +71,7 @@ export type {
   UseTourReturn,
 } from './tour-guide';
 
+// shadcn AI Elements (Chain-of-Thought, Reasoning Trace, Sources Citation)
+export * from './components/ai-elements';
+
+

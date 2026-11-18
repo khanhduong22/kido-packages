@@ -1,7 +1,7 @@
 {
   "name": "@kido/ai-stream",
   "version": "1.0.0",
-  "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing & RPM/TPM Rate Guard Suite (GonnaCrash Level 02 faster_answers & Level 03 rpm_ceiling)",
+  "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, 3-Tier RAG Pipeline, Cross-Encoder Reranker, Ingestion Pacing, Context Sanitizer, EDoS Quota Shield, Entity-Aware Semantic Cache & RAG Security Guard Suite",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -23,13 +23,37 @@
       "import": "./dist/rag-security-guard.mjs",
       "require": "./dist/rag-security-guard.js",
       "default": "./src/rag-security-guard/index.ts"
+    },
+    "./provider-fallback": {
+      "types": "./dist/provider-fallback.d.ts",
+      "import": "./dist/provider-fallback.mjs",
+      "require": "./dist/provider-fallback.js",
+      "default": "./src/provider-fallback/index.ts"
+    },
+    "./rag-pipeline": {
+      "types": "./dist/rag-pipeline.d.ts",
+      "import": "./dist/rag-pipeline.mjs",
+      "require": "./dist/rag-pipeline.js",
+      "default": "./src/rag-pipeline/index.ts"
+    },
+    "./quota-manager": {
+      "types": "./dist/quota-manager.d.ts",
+      "import": "./dist/quota-manager.mjs",
+      "require": "./dist/quota-manager.js",
+      "default": "./src/quota-manager/index.ts"
+    },
+    "./semantic-cache": {
+      "types": "./dist/semantic-cache.d.ts",
+      "import": "./dist/semantic-cache.mjs",
+      "require": "./dist/semantic-cache.js",
+      "default": "./src/semantic-cache/index.ts"
     }
   },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx src/index.test.ts src/rag-security-guard/index.test.ts"
+    "test": "node --test --import tsx src/index.test.ts src/rag-security-guard/index.test.ts test/ai-stream.test.ts test/quota-manager.test.ts test/semantic-cache.test.ts"
   },
   "dependencies": {},
   "devDependencies": {
