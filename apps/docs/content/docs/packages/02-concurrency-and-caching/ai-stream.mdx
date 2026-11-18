@@ -95,6 +95,38 @@ flowchart TD
 - `FailClosedScopeResolver<TScope>` & `classifyZeroCostIntent(query, options)`: Fail-closed TTL-cached scope/channel ACL resolver with `pinToCurrentScope` (anti-keyword hijack) and zero-cost short-circuiting for greetings, capability probes, and interactive fallback placeholders.
 - `escapeBoundaryTags`, `wrapUntrustedRagContext`, `detectPromptOverrideAttempt`, `clampMessageAtBoundary`, `SAFE_UPSTREAM_UNAVAILABLE_MESSAGE`, & `ProgressiveMessageEditThrottler` (`streamToEditableMessage`): XML delimiter hardening, prompt-override detection, and throttled editable-message streaming with fail-closed fallback on `503`/upstream errors.
 
+### 6. Level 15 (`cheap_model_first`): Intelligent Model Routing & FrugalGPT Cascade (`src/model-router/`)
+- `PromptComplexityClassifier` & `calibrateRouteThreshold(samples, targetHardShareOrBudget)`: Sub-millisecond bilingual (English & Vietnamese) complexity classifier combining zero-cost local detection (`zero_cost` at `0¢`), structural difficulty heuristics (stack traces, code blocks, JSON payloads, webhook HMAC debug, multi-constraint budget combos, architectural comparisons), and router-local trigram utterance centroids (`RouteUtteranceCentroid[]`), paired with RouteLLM-style max-margin threshold calibration (`tau`).
+- `evaluateAnswerConfidence(query, answer, options)`: Deterministic `&lt;1ms` FrugalGPT quality scorer in `[0, 1]` validating non-empty length, absence of EN/VI refusal hedging, required entity/price/citation grounding, and structural completeness (balanced code fences, valid JSON).
+- `IntelligentModelRouter` & `FrugalModelCascade`: Routes `zero_cost` to a local `0¢` handler, `easy` (80% traffic) to `openai_small` (`0.0273¢/task`) with optional confidence-triggered FrugalGPT escalation, and `hard` (20% traffic) to `openai_large` (`3.19¢/task`), protected by a `large`-tier RPM ceiling guard that degrades gracefully instead of cascading HTTP 429 failures.
+- `simulateLevel15CheapModelFirst(options?)`: Deterministic GonnaCrash World 3 Level 15 3-Star verifier proving `0.6599¢/task` (`659,856 UC &lt;= 760,000 UC`), `100%` answered (`0` 429s), `340ms` TTFT (`&lt; 2,000ms`), `96.25%` hard accuracy (`&gt;= 93%`), and `90.45%` overall accuracy (`&gt;= 85%`).
+
+```mermaid
+flowchart LR
+    Q["Incoming User Query (EN / VI)"] --> Cls["PromptComplexityClassifier (&lt;1ms)"]
+    Cls -- "zero_cost (0¢)" --> Z["Local Static Handler ($0 LLM Cost)"]
+    Cls -- "easy (80% traffic)" --> S["Small Model (openai_small · 0.0273¢)"]
+    S --> Conf{"evaluateAnswerConfidence >= tau_conf?"}
+    Conf -- "Yes" --> Out["Stream SSE Response"]
+    Conf -- "No (FrugalGPT Escalate)" --> Guard{"Large Tier RPM Ceiling OK?"}
+    Cls -- "hard (20% traffic)" --> Guard
+    Guard -- "Allowed" --> L["Large Model (openai_large · 3.19¢)"]
+    Guard -- "Saturated (No 429 Crash)" --> Deg["Graceful Small/Static Fallback"]
+    L --> Out
+    Deg --> Out
+```
+
+#### Level 15 Benchmark & OSS Router Comparison
+
+| Strategy / Router | Mechanism | Dependencies & Latency | Cost / Task (Level 15) | Hard / Overall Accuracy | 429 Resilience & SLA Verdict |
+|---|---|---|---|---|---|
+| **`all_large` (Naive Baseline)** | Send 100% traffic to `openai_large` at 20 req/s | Single large pool; 2,350 ms TTFT | `3.1900¢` (`3,190,000 UC`) | `96.25%` / `96.25%` | **FAIL** (50% 429 drops &amp; exceeds `0.76¢` budget) |
+| **`all_small` (Naive Cheap)** | Send 100% traffic to `openai_small` | Single small pool; 280 ms TTFT | `0.0273¢` (`27,300 UC`) | `55.0%` / `82.2%` | **FAIL** (Hard `&lt; 93%` &amp; Overall `&lt; 85%`) |
+| **RouteLLM / RouterBench** | Matrix factorization / BERT classifier with calibrated `tau` | Python ML stack / GPU inference | ~75% reduction vs all-large | Retains ~95% large quality | Threshold-based routing |
+| **Portkey / LiteLLM Semantic Router** | Rule + embedding intent centroids to model pools | Gateway / external embeddings | Workload-dependent | Policy-driven | Routing + provider fallback |
+| **Stanford FrugalGPT** | Cascade: try cheap model first + scorer escalating to strong LLM | Python cascade pipeline | Workload-dependent | High via escalation | Sequential cascade |
+| **`@kido/ai-stream/model-router`** | **Heuristic + Trigram Centroids + Calibrated `tau` + FrugalGPT + RPM Guard** | **0 dependencies, `&lt;1ms` EN/VI TS; 340 ms TTFT** | **`0.6599¢` (`659,856 UC`)** | **`96.25%` / `90.45%`** | **PASSED (3-Star Record, 0 429s)** |
+
 ---
 
 ## 💻 Code Implementation
@@ -380,18 +412,20 @@ Verified against the **GonnaCrash World 3 (Level 02 & Level 03)** benchmarks:
 # Install directly via Kido Bag CLI
 npx kido-bag add sse-protocol
 npx kido-bag add rpm-rate-guard
+npx kido-bag add model-router
 ```
 
   </Tab>
   <Tab value="Surgical Slice Extraction">
 
 ```bash
-# Extract only the edge headers, SSE protocol, rate guard, and RAG security guard
+# Extract only the edge headers, SSE protocol, rate guard, RAG security guard, and model router
 mkdir -p src/lib/ai-stream
 cp packages/ai-stream/src/edge-flush-headers.ts src/lib/ai-stream/
 cp packages/ai-stream/src/sse-protocol.ts src/lib/ai-stream/
 cp -r packages/ai-stream/src/rpm-rate-guard/ src/lib/ai-stream/rpm-rate-guard/
 cp -r packages/ai-stream/src/rag-security-guard/ src/lib/ai-stream/rag-security-guard/
+cp -r packages/ai-stream/src/model-router/ src/lib/ai-stream/model-router/
 ```
 
   </Tab>
@@ -407,7 +441,11 @@ cp -r packages/ai-stream/src/rag-security-guard/ src/lib/ai-stream/rag-security-
 ```
 
 ```typescript
-import { buildSseResponseHeaders, executeWithAiRateGuard } from '@kido/ai-stream';
+import {
+  buildSseResponseHeaders,
+  executeWithAiRateGuard,
+  FrugalModelCascade,
+} from '@kido/ai-stream';
 ```
 
   </Tab>

@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "updatedAt": "2026-11-18T07:55:34.697Z",
   "totalPackages": 39,
-  "totalSlices": 114,
+  "totalSlices": 115,
   "pillars": [
     {
       "id": 1,
@@ -1142,6 +1142,30 @@
                 "streamToEditableMessage"
               ],
               "description": "src/rag-security-guard/ (./rag-security-guard)"
+            },
+            {
+              "name": "model-router",
+              "path": "src/model-router/",
+              "type": "directory",
+              "packageName": "@kido/ai-stream",
+              "packagePath": "packages/ai-stream",
+              "exports": [
+                "ComplexityTier",
+                "RoutePort",
+                "RouteUtteranceCentroid",
+                "DEFAULT_ROUTE_CENTROIDS",
+                "computeRouterTrigramVector",
+                "computeRouterCosineSimilarity",
+                "PromptComplexityClassifier",
+                "calibrateRouteThreshold",
+                "evaluateAnswerConfidence",
+                "IntelligentModelRouter",
+                "FrugalModelCascade",
+                "createIntelligentModelRouter",
+                "createFrugalModelCascade",
+                "simulateLevel15CheapModelFirst"
+              ],
+              "description": "src/model-router/ (./model-router)"
             }
           ]
         }

@@ -1,7 +1,7 @@
 # Package Directives: @kido/ai-stream
 
-> **Scope**: Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, RAG Security Guard, Multi-Provider Fallback, 3-Tier RAG Pipeline, EDoS Quota Shield & Entity-Aware Semantic Cache Suite.  
-> **Standards Reference**: GonnaCrash World 3 Level 02 `faster_answers`, Level 03 `rpm_ceiling`, Level 07 `public_launch`, Level 08 `internal_docs_qa`, Level 09 `find_the_right_chunk`, Level 10 `fresh_docs_hourly`, Level 12 `bloated_tickets`, Level 13 `budget_burning_chatbot`, Level 14 `same_question_new_words`, OpenAI Chat Completion Stream Protocol, WHATWG ReadableStream & TextDecoder Streaming Standards, Enterprise AI RAG Architecture.
+> **Scope**: Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, RAG Security Guard, Multi-Provider Fallback, 3-Tier RAG Pipeline, EDoS Quota Shield, Entity-Aware Semantic Cache & Intelligent Model Routing / FrugalGPT Cascade Suite.  
+> **Standards Reference**: GonnaCrash World 3 Level 02 `faster_answers`, Level 03 `rpm_ceiling`, Level 07 `public_launch`, Level 08 `internal_docs_qa`, Level 09 `find_the_right_chunk`, Level 10 `fresh_docs_hourly`, Level 12 `bloated_tickets`, Level 13 `budget_burning_chatbot`, Level 14 `same_question_new_words`, Level 15 `cheap_model_first`, OpenAI Chat Completion Stream Protocol, WHATWG ReadableStream & TextDecoder Streaming Standards, RouteLLM, FrugalGPT, Enterprise AI RAG Architecture.
 
 ## 1. Core Invariants & Boundaries
 
@@ -32,6 +32,10 @@
 8. **RAG Security Guard & Streaming DLP Invariants (`src/rag-security-guard/`)**:
    - `FailClosedScopeResolver` MUST fail closed (`allowed: false, scopes: []`) on missing `userId`, unwhitelisted scope, or verifier exception, and MUST pin non-DM channel requests to `currentScope`.
    - `StreamingDlpRedactor` MUST hold back incomplete tokens/credential lines so split secrets are scrubbed before emission; `ProgressiveMessageEditThrottler` MUST emit `SAFE_UPSTREAM_UNAVAILABLE_MESSAGE` on upstream errors without dumping raw RAG snippets.
+9. **Intelligent Model Routing & FrugalGPT Cascade Invariants (`src/model-router/`)**:
+   - `src/model-router/` MUST remain 100% self-contained with zero imports from sibling slices (`rag-pipeline`, `semantic-cache`, `rpm-rate-guard`, etc.) and zero external runtime dependencies.
+   - `PromptComplexityClassifier` MUST evaluate in `<1ms` without blocking I/O; `zero_cost` greetings/acknowledgments MUST never burn LLM tokens (`0¢`), `easy` queries MUST stay off `large`-tier RPM budgets, and `large`-tier RPM ceiling saturation MUST degrade gracefully (`small_fallback` / `static_fallback`) rather than crashing with HTTP 429.
+   - `simulateLevel15CheapModelFirst()` verifies GonnaCrash Level 15 3-Star Best Cost `0.6599¢/task` (`659,856 UC <= 760,000 UC`), `>=99%` answered (`0` 429s), `<2,000ms` TTFT, `>=93%` hard accuracy, and `>=85%` overall accuracy.
 
 ## 2. Directory Layout
 
@@ -49,8 +53,9 @@ packages/ai-stream/
 │   ├── rag-pipeline/             # 3-Tier RAG Cascade, Reranker, Ingestion Pacer & Sanitizer (L08-L12)
 │   ├── quota-manager/            # 3-Layer EDoS Shield & Per-User Token Quota (Level 13)
 │   ├── semantic-cache/           # Entity-Aware Strict Semantic Cache (Level 14)
+│   ├── model-router/             # Intelligent Model Routing & FrugalGPT Cascade (Level 15)
 │   └── index.test.ts             # Streaming, rate-guard, fallback & RAG unit tests
-├── test/                         # Level 09/10/12/13/14 integration suites
+├── test/                         # Level 09/10/12/13/14/15 integration suites
 ├── tsup.config.ts
 ├── tsconfig.json
 ├── package.json

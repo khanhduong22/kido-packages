@@ -1,7 +1,7 @@
 # @kido/ai-stream
 
-> **Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, Two-Stage Cross-Encoder Reranker, Asynchronous Ingestion Pacing, Context Sanitizer, Per-User Token Quota / EDoS Shield & Entity-Aware Strict Semantic Cache Suite**  
-> Inspired by GonnaCrash World 3 Level 02 `faster_answers` (`streaming_ttft`), Level 03 `rpm_ceiling` (`provider_rate_limit`), Level 07 `public_launch` (`provider_fallback`), Level 08 `internal_docs_qa` (`rag_basics`), Level 09 `find_the_right_chunk` (`two_stage_reranker`), Level 10 `fresh_docs_hourly` (`ingestion_pacing`), Level 12 `bloated_tickets` (`context_rot`), Level 13 `budget_burning_chatbot` (`edos_quota_shield`), Level 14 `same_question_new_words` (`semantic_cache`), and production AI architectures (ChatGPT, Claude, Perplexity, LiteLLM, Vercel AI SDK):
+> **Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, Two-Stage Cross-Encoder Reranker, Asynchronous Ingestion Pacing, Context Sanitizer, Per-User Token Quota / EDoS Shield, Entity-Aware Strict Semantic Cache & Intelligent Model Routing / FrugalGPT Cascade Suite**  
+> Inspired by GonnaCrash World 3 Level 02 `faster_answers` (`streaming_ttft`), Level 03 `rpm_ceiling` (`provider_rate_limit`), Level 07 `public_launch` (`provider_fallback`), Level 08 `internal_docs_qa` (`rag_basics`), Level 09 `find_the_right_chunk` (`two_stage_reranker`), Level 10 `fresh_docs_hourly` (`ingestion_pacing`), Level 12 `bloated_tickets` (`context_rot`), Level 13 `budget_burning_chatbot` (`edos_quota_shield`), Level 14 `same_question_new_words` (`semantic_cache`), Level 15 `cheap_model_first` (`model_routing`), and production AI architectures (ChatGPT, Claude, Perplexity, RouteLLM, FrugalGPT, LiteLLM, Vercel AI SDK):
 > 1. **Naive Baseline (Blocking HTTP Request)**: Server waits for LLM to autoregressively synthesize all 300+ tokens (~4.2 seconds). The user stares at a completely blank screen, assumes the app crashed, and reloads repeatedly.
 > 2. **Naive Baseline (Retry Storm on 429)**: When bursts hit provider RPM/TPM limits, immediate retries (`retry: instant`) collapse upstream providers, causing cascade failures (< 99% success).
 > 3. **Naive Baseline (Bi-Encoder Vector Only)**: Bi-Encoder models encode queries and chunks independently, leading to semantic false positives and lost nuance (accuracy capped at ~72.5% < 85% SLA).
@@ -117,6 +117,19 @@ Mô phỏng 120 ticks @ 2 req/s (240 tác vụ `chat_shop`, ngân sách `<= 410,
 | **Độ chính xác (Accuracy)** | **`76.5%`** (FAIL Entity Collision) | **`82.0%`** (FAIL Entity Collision) | `96.25%` | `96.25%` | **`96.25%`** (`42` entity mismatch blocked) | `>= 93.0%` 🏆 |
 | **Chi phí mỗi tác vụ (Cost/Task)** | `0.2850¢` (`285,000 UC`) | `0.3120¢` (`312,000 UC`) | **`0.5482¢`** (`548,200 UC`) (FAIL) | **`0.6854¢`** (`685,400 UC`) (FAIL) | **`0.3559¢` (`355,889 UC`)** | `<= 0.4100¢` (`410,000 UC`) 🏆 |
 | **Đạt chuẩn 3 Sao (SLA)** | ❌ FAIL Accuracy | ❌ FAIL Accuracy | ❌ FAIL Budget | ❌ FAIL Budget | 🏆 **PASSED (3-Star Record)** | **3-Star Record** |
+
+### World 3 Level 15: `cheap_model_first` (`model_routing`)
+
+Mô phỏng 120 ticks @ 20 req/s (2,400 tác vụ `chat_support` gồm 80% câu hỏi dễ + 20% câu hỏi khó, ngân sách `<= 760,000 UC = 0.7600¢/task`, độ chính xác câu khó `>= 93%`, tổng thể `>= 85%`):
+
+| Tiêu Chí | `all_large` (100% `openai_large`) | `all_small` (100% `openai_small`) | `model_router` (`80% easy -> small` + `20% hard -> large`, `stream: true`) | GonnaCrash Level 15 Target |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tỷ lệ phản hồi (Answered)** | `50.0%` (Rớt 1,200 lỗi 429) | `100.0%` | **`100.0%`** (`2,400 / 2,400`, `0` 429s) | `>= 99.0%` 🏆 |
+| **Chữ đầu tiên (TTFT)** | `2,350 ms` (Nghẽn 429) | `280 ms` | **`340 ms`** (`stream: true`) | `<= 2,000 ms` 🟢 |
+| **Độ chính xác câu khó (Hard)** | `96.25%` | **`55.0%`** (FAIL) | **`96.25%`** | `>= 93.0%` 🏆 |
+| **Độ chính xác tổng thể (Overall)** | `96.25%` | **`82.2%`** (FAIL) | **`90.45%`** | `>= 85.0%` 🟢 |
+| **Chi phí mỗi tác vụ (Cost/Task)** | **`3.1900¢`** (`3,190,000 UC`) (FAIL) | `0.0273¢` (`27,300 UC`) | **`0.6599¢` (`659,856 UC`)** | `<= 0.7600¢` (`760,000 UC`) 🏆 |
+| **Đạt chuẩn 3 Sao (SLA)** | ❌ FAIL 429 + Budget | ❌ FAIL Accuracy | 🏆 **PASSED (3-Star Record)** | **3-Star Record** |
 
 
 
@@ -680,6 +693,61 @@ const sim14 = simulateLevel14SameQuestionNewWords({
   stream: true,
 });
 console.log(sim14.verdict, sim14.costPerTaskUc, sim14.isThreeStarRecord);
+```
+
+---
+
+## 🧠 Slice: `src/model-router/` (`@kido/ai-stream/model-router`)
+
+Bộ định tuyến mô hình thông minh **Intelligent Model Routing & FrugalGPT Cascade** (GonnaCrash World 3 Level 15 `cheap_model_first`, RouteLLM & Stanford FrugalGPT):
+
+1. **`PromptComplexityClassifier` & `calibrateRouteThreshold`**:
+   - Phân loại `< 1ms` song ngữ Anh/Việt thành 4 mức (`zero_cost`, `easy`, `medium`, `hard`) và 2 cổng (`easy`, `hard`).
+   - Kết hợp heuristic cấu trúc (stack traces, code blocks, JSON payloads, webhook HMAC/502 debug, so sánh kiến trúc, combo đa ràng buộc ngân sách) với semantic cosine centroid (`RouteUtteranceCentroid[]`, `computeRouterTrigramVector`).
+   - Hỗ trợ `calibrateRouteThreshold(samples, targetHardShareOrBudget)` chuẩn RouteLLM tự giải ngưỡng tối ưu `tau` theo tỷ lệ câu khó mục tiêu hoặc trần ngân sách.
+2. **`evaluateAnswerConfidence`, `IntelligentModelRouter` & `FrugalModelCascade`**:
+   - Định tuyến `zero_cost -> 0¢`, `easy -> small` (`0.0273¢`), `hard -> large` (`3.19¢`).
+   - Khi bật FrugalGPT cascade (`FrugalModelCascade`), kiểm tra câu trả lời model nhỏ bằng `evaluateAnswerConfidence` (độ dài, từ chối/do dự Anh-Việt, entity/giá/trích dẫn, cấu trúc JSON/code fence); nếu `< minConfidence` mới leo thang sang `large`.
+   - Tích hợp lá chắn trần RPM cho `large` giúp 80% câu dễ không chạm hạn mức `large` và tự hạ tải an toàn thay vì nổ 429, đồng thời theo dõi tiết kiệm chi phí qua `getStats()`.
+
+### OSS Model Router Landscape vs `@kido/ai-stream/model-router`
+
+| Giải Pháp / Nghiên Cứu | Cơ Chế Định Tuyến | Ngôn Ngữ / Phụ Thuộc | Bảo Vệ Trần RPM & Cascade |
+| :--- | :--- | :--- | :--- |
+| **RouteLLM / RouterBench** | Matrix Factorization / BERT classifier với ngưỡng `tau` hiệu chỉnh | Python ML stack / GPU inference | Threshold routing |
+| **Portkey / LiteLLM Semantic Router** | Rule + Embedding vector centroids -> model pool | Gateway server / external embeddings | Routing + provider fallback |
+| **Stanford FrugalGPT** | Cascade: gọi model nhỏ trước -> scorer chấm điểm -> escalate | Python research pipeline | Cascade escalation |
+| **`@kido/ai-stream/model-router`** | **Heuristic + Trigram Centroids + Calibrated `tau` + FrugalGPT Cascade** | **0 dependencies, `<1ms` EN/VI TS** | **Large-tier RPM ceiling + graceful fallback** |
+
+### Quickstart: `@kido/ai-stream/model-router`
+```typescript
+import {
+  PromptComplexityClassifier,
+  calibrateRouteThreshold,
+  FrugalModelCascade,
+  simulateLevel15CheapModelFirst,
+} from '@kido/ai-stream/model-router';
+
+const classifier = new PromptComplexityClassifier();
+const cal = calibrateRouteThreshold(trainingSamples, { maxCostPerTaskCents: 0.76 });
+classifier.setThreshold(cal.optimalTau);
+
+const router = new FrugalModelCascade({
+  classifier,
+  largeTierMaxRpm: 600,
+  handlers: {
+    zeroCostHandler: () => 'Xin chào! Bạn cần hỗ trợ nội dung gì hôm nay?',
+    smallModelHandler: async ({ prompt }) => await callSmallModel(prompt),
+    largeModelHandler: async ({ prompt }) => await callLargeModel(prompt),
+  },
+});
+
+const out = await router.route({ prompt: 'Debug webhook HMAC-SHA256 returning 401 on JSON payload' });
+console.log(out.selectedModelTier, out.costCents, router.getStats().savingsPct);
+
+// Chạy mô phỏng kiểm chứng Level 15 3-Star SLA (659,856 UC/task <= 760,000 UC)
+const sim15 = simulateLevel15CheapModelFirst();
+console.log(sim15.verdict, sim15.costPerTaskUc, sim15.isThreeStarRecord);
 ```
 
 ---

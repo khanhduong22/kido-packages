@@ -9,6 +9,7 @@ export default defineConfig({
     'rag-pipeline': 'src/rag-pipeline/index.ts',
     'quota-manager': 'src/quota-manager/index.ts',
     'semantic-cache': 'src/semantic-cache/index.ts',
+    'model-router': 'src/model-router/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: true,
