@@ -6,10 +6,11 @@
  * 3-Tier RAG Pipeline, Cross-Encoder Reranker, Ingestion Pacing, Context Sanitizer,
  * Per-User Token Quota / 3-Layer EDoS Shield, Entity-Aware Strict Semantic Cache,
  * Intelligent Model Routing / FrugalGPT Cascade, Out-of-Band Offline Eval Gate Suite,
- * Out-of-Band Offline Eval Gate Suite, Full-Stack Structured Launch Delivery
- * (Partial JSON + Validated Cache + Waiting SSE), & Dual-Layer Permissive Guardrail Cascade
- * + System-Prompt Canary Kill-Switch (inspired by GonnaCrash World 3 Levels 02, 03, 07, 08,
- * 09, 10, 12, 13, 14, 15, 18, 19 & 20).
+ * Full-Stack Structured Launch Delivery (Partial JSON + Validated Cache + Waiting SSE),
+ * Dual-Layer Permissive Guardrail Cascade + System-Prompt Canary Kill-Switch,
+ * Full-Duplex Voice Streaming + Sentence-Level Chunking Pipeline, &
+ * Rolling Summary Conversation Memory Compression Suite (inspired by GonnaCrash
+ * World 3 Levels 02, 03, 07, 08, 09, 10, 12, 13, 14, 15, 18, 19, 20, 25 & 26).
  */
 
 export * from './edge-flush-headers.js';
@@ -25,3 +26,5 @@ export * from './semantic-cache/index.js';
 export * from './model-router/index.js';
 export * from './eval-gate/index.js';
 export * from './structured-launch/index.js';
+export * from './voice-pipeline/index.js';
+export * from './conversation-memory/index.js';

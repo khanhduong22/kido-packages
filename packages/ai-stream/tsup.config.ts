@@ -12,6 +12,8 @@ export default defineConfig({
     'model-router': 'src/model-router/index.ts',
     'eval-gate': 'src/eval-gate/index.ts',
     'structured-launch': 'src/structured-launch/index.ts',
+    'voice-pipeline': 'src/voice-pipeline/index.ts',
+    'conversation-memory': 'src/conversation-memory/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: true,

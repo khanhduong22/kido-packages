@@ -1,7 +1,7 @@
 # @kido/ai-stream
 
-> **Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, Two-Stage Cross-Encoder Reranker, Asynchronous Ingestion Pacing, Context Sanitizer, Per-User Token Quota / EDoS Shield, Entity-Aware Strict Semantic Cache, Intelligent Model Routing / FrugalGPT Cascade, Out-of-Band Offline Eval Gate, Structured Feature Launch Delivery & Dual-Layer Guardrail Cascade + Canary Kill-Switch Suite**  
-> Inspired by GonnaCrash World 3 Level 02 `faster_answers` (`streaming_ttft`), Level 03 `rpm_ceiling` (`provider_rate_limit`), Level 07 `public_launch` (`provider_fallback`), Level 08 `internal_docs_qa` (`rag_basics`), Level 09 `find_the_right_chunk` (`two_stage_reranker`), Level 10 `fresh_docs_hourly` (`ingestion_pacing`), Level 12 `bloated_tickets` (`context_rot`), Level 13 `budget_burning_chatbot` (`edos_quota_shield`), Level 14 `same_question_new_words` (`semantic_cache`), Level 15 `cheap_model_first` (`model_routing`), Level 18 `eval_before_release` (`offline_eval_gate`), Level 19 `ai_feature_launch` (`structured_launch`), Level 20 `poisoned_chat_text` (`dual_guardrail_canary`), and production AI architectures (ChatGPT, Claude, Perplexity Product Cards, Shopify Storefront AI, RouteLLM, FrugalGPT, Promptfoo, Ragas, DeepEval, Llama Guard, Braintrust Canary, Anthropic Constitutional Classifiers, LiteLLM, Vercel AI SDK):
+> **Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, Two-Stage Cross-Encoder Reranker, Asynchronous Ingestion Pacing, Context Sanitizer, Per-User Token Quota / EDoS Shield, Entity-Aware Strict Semantic Cache, Intelligent Model Routing / FrugalGPT Cascade, Out-of-Band Offline Eval Gate, Structured Feature Launch Delivery, Dual-Layer Guardrail Cascade + Canary Kill-Switch, Full-Duplex Voice Streaming Pipeline & Rolling Summary Conversation Memory Suite**  
+> Inspired by GonnaCrash World 3 Level 02 `faster_answers` (`streaming_ttft`), Level 03 `rpm_ceiling` (`provider_rate_limit`), Level 07 `public_launch` (`provider_fallback`), Level 08 `internal_docs_qa` (`rag_basics`), Level 09 `find_the_right_chunk` (`two_stage_reranker`), Level 10 `fresh_docs_hourly` (`ingestion_pacing`), Level 12 `bloated_tickets` (`context_rot`), Level 13 `budget_burning_chatbot` (`edos_quota_shield`), Level 14 `same_question_new_words` (`semantic_cache`), Level 15 `cheap_model_first` (`model_routing`), Level 18 `eval_before_release` (`offline_eval_gate`), Level 19 `ai_feature_launch` (`structured_launch`), Level 20 `poisoned_chat_text` (`dual_guardrail_canary`), Level 25 `voice_assistant_latency` (`voice_latency_budget`), Level 26 `long_conversation_memory` (`rolling_summary_memory`), and production AI architectures (ChatGPT, Claude, Perplexity Product Cards, Shopify Storefront AI, RouteLLM, FrugalGPT, Promptfoo, Ragas, DeepEval, Llama Guard, Braintrust Canary, Anthropic Constitutional Classifiers, LiveKit Agents, Pipecat, LangChain ConversationSummaryBufferMemory, Mem0, Zep/Graphiti, Letta, LiteLLM, Vercel AI SDK):
 > 1. **Naive Baseline (Blocking HTTP Request)**: Server waits for LLM to autoregressively synthesize all 300+ tokens (~4.2 seconds). The user stares at a completely blank screen, assumes the app crashed, and reloads repeatedly.
 > 2. **Naive Baseline (Retry Storm on 429)**: When bursts hit provider RPM/TPM limits, immediate retries (`retry: instant`) collapse upstream providers, causing cascade failures (< 99% success).
 > 3. **Naive Baseline (Bi-Encoder Vector Only)**: Bi-Encoder models encode queries and chunks independently, leading to semantic false positives and lost nuance (accuracy capped at ~72.5% < 85% SLA).
@@ -942,6 +942,173 @@ const stream = streamWithWaitingFeedback({
 
 const sim19 = await simulateLevel19AiFeatureLaunch();
 console.log(sim19.verdict, sim19.costPerTaskUc, sim19.isThreeStarRecord); // 355785 true
+```
+
+---
+
+## 🎙️ Slice: `src/voice-pipeline/` (`@kido/ai-stream/voice-pipeline`)
+
+Kiến trúc **Full-Duplex Voice Streaming & Sentence-Level Chunking** chinh phục **GonnaCrash World 3 Level 25 (`voice_assistant_latency` · `voice_latency_budget`)** — cắt độ trễ âm thanh đầu tiên từ **`4,400 ms`** (serial batch) xuống **`750 ms`** (`<= 1,200 ms` SLA) ở mức chi phí kỷ lục 3 Sao chính xác **`663,289 UC`** (`0.6633¢/turn <= 770,000 UC`):
+
+```mermaid
+flowchart LR
+    U["Caller Audio (2 voice_turn/s)"] -->|"PCM Stream"| STT["Streaming STT (220ms · 50,000 UC)"]
+    STT -->|"interim / speech_final"| TC["VoiceTurnController (idle -> listening -> processing -> speaking -> interrupted)"]
+    TC -->|"AbortSignal (Barge-In)"| LLM["Streaming LLM (openai_small · 240ms TTFT · 13,000 UC)"]
+    LLM -->|"Token Deltas"| CHK["VoiceSentenceChunker + sanitizeForSpeech (100ms First-Clause Flush)"]
+    CHK -->|"Ordered Clauses (0, 1, 2...)"| TTS["Concurrent FIFO TTS Pool (190ms First Audio · 600,000 UC)"]
+    TTS -->|"Strict FIFO Audio (~750ms TTFA)"| U
+    TC -.->|"VAD Speech Onset -> AbortController.abort()"| TTS
+```
+
+1. **Bilingual VI/EN Sentence Chunker & Speech Sanitizer (`sentence-chunker.ts`)**:
+   - `VoiceSentenceChunker` tách ranh giới câu tiếng Việt + tiếng Anh theo thời gian thực mà **không bao giờ tách nhầm** trên chữ viết tắt (`Mr.`, `Dr.`, `TP.`, `v.v.`, `e.g.`), số thập phân/tiền tệ (`1.2s`, `150.000đ`, `1,200 ms`), URLs/emails, hay danh sách đánh số (`1. ... 2. ...`).
+   - Hỗ trợ `firstClauseCommaFlush` (đẩy vế câu đầu tiên sớm tại `,` / `—` để ép TTFA `< 800ms`), `minChunkChars`, `maxBufferChars`, và `sanitizeForSpeech(text)` loại bỏ cú pháp Markdown (`**`, `` ` ``, headings, links, fenced code) để TTS đọc tự nhiên.
+2. **Full-Duplex Turn State Machine & Latency Budget Tracker (`turn-controller.ts`, `latency-budget.ts`)**:
+   - `VoiceTurnController` quản lý vòng đời `idle -> listening -> processing -> speaking -> interrupted`, endpointing interim/final kiểu Deepgram (`speechFinal` + `checkEndpointing()`), và lan truyền **barge-in** tức thì qua `AbortController` (`VoiceBargeInError`).
+   - `VoiceLatencyBudgetTracker` bóc tách thời lượng 4 chặng (`sttFinalMs`, `llmTtftMs`, `firstClauseMs`, `ttsFirstAudioMs`, `e2eFirstAudioMs`), kiểm soát ngân sách `<= 1,200ms`, xác định `bottleneckStage`, và gắn mã nguyên nhân `unstreamed_speech` / `no_streaming_ttft`.
+3. **Concurrent Strict-FIFO Voice Pipeline (`voice-stream-pipeline.ts`, `ordered-tts-dispatcher.ts`)**:
+   - `runVoiceStreamPipeline(...)` nối song song `STT -> LLM -> VoiceSentenceChunker -> Concurrent TTS`, bảo toàn thứ tự phát âm thanh **FIFO tuyệt đối** (`clauseIndex: 0, 1, 2...`) ngay cả khi câu sau tổng hợp xong trước câu đầu, và cắt sạch mọi frame audio tồn đọng ngay khi barge-in xảy ra.
+
+### OSS Voice Agent Benchmarks vs `@kido/ai-stream/voice-pipeline`
+
+| Framework / SDK | Pattern Được Chưng Cất | Phụ Thuộc / Runtime | FIFO TTS & Barge-In | Chi Phí Level 25 (`<= 770,000 UC`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **`livekit/agents`** | Sentence tokenizer, VAD turn-taking & interruption handling | LiveKit WebRTC / Node-Python workers | Full-duplex room turn-taking | Production voice RTC stack |
+| **`pipecat-ai/pipecat`** | `SentenceAggregator` & upstream/downstream interruption frames | Python frame pipeline | Frame-level cancellation | Production frame pipeline |
+| **`deepgram/deepgram-js-sdk`** | Streaming `is_final` + `speech_final` endpointing | WebSocket SDK | Sub-300ms streaming STT | `50,000 UC/turn` (`$500/1M`) |
+| **`elevenlabs/elevenlabs-js`** | Chunked WebSocket TTS flushing per clause | WebSocket SDK | Streaming audio byte chunks | `600,000 UC/turn` (`$6,000/1M` · 90% bill) |
+| **`@kido/ai-stream/voice-pipeline`** | **Bilingual VI/EN Chunker + Turn FSM + Budget Tracker + FIFO Pipeline** | **0 dependencies, pure TS** | **Strict FIFO concurrency + `0ms` `AbortController` barge-in** | **`663,289 UC` (`0.6633¢/turn` · ★★★ 3-Star Record)** |
+
+### GonnaCrash World 3 Level 25 Proof Matrix (`2 voice_turn/s` · `5,184,000 turns/mo`)
+
+> **Cost Anatomy**: `App Server (S)` = `289 UC` + `STT` = `50,000 UC` + `TTS` = `600,000 UC` (chiếm **90% hóa đơn!**). Vì TTS đã tiêu `600,000 UC` trên tổng ngân sách `770,000 UC`, chọn `openai_mid` (`260,000 UC`) sẽ vượt trần (`910,289 UC`) — **`openai_small` (`13,000 UC`)** cộng full-duplex streaming mới là lời giải 3 Sao chính xác **`663,289 UC`**!
+
+| Strategy | STT / LLM / TTS Streaming | LLM Model | First Audio (`<= 1,200ms`) | Accuracy (`>= 85%`) | Cost / Turn (`<= 770,000 UC`) | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`serial_batch`** | `false / false / false` | `openai_small` | **`4,400 ms`** (`1000+2000+1400`) | `87.0%` | `663,289 UC` | **FAIL** (`unstreamed_speech`, `no_streaming_ttft`) |
+| **`partial_streaming`** | `false / true / false` | `openai_small` | **`2,740 ms`** (`1000+240+100+1400`) | `87.0%` | `663,289 UC` | **FAIL** (`unstreamed_speech`) |
+| **`streaming_mid_model`** | `true / true / true` | `openai_mid` | `1,160 ms` | `94.0%` | **`910,289 UC`** (`+260,000 UC` LLM) | **FAIL** (`budget_exceeded > 770,000 UC`) |
+| **`full_duplex_three_star`** | **`true / true / true`** | **`openai_small`** | **`750 ms`** (`220+240+100+190`) | **`87.0%`** | **`663,289 UC`** (`0.6633¢/turn`) | **PASSED (★★★ 3-Star Record · 82.95% Faster)** |
+
+### Quickstart: `@kido/ai-stream/voice-pipeline`
+```typescript
+import {
+  VoiceTurnController,
+  runVoiceStreamPipeline,
+  simulateLevel25VoiceAssistantLatency,
+} from '@kido/ai-stream/voice-pipeline';
+
+const turnController = new VoiceTurnController();
+
+for await (const event of runVoiceStreamPipeline({
+  sttStream: streamBankingSttAudio(),
+  turnController,
+  llmStream: (transcript, signal) => streamCommerceVoiceBotLlm(transcript, { model: 'openai_small', signal }),
+  ttsSynthesize: (clause, signal) => synthesizeStreamingTts(clause.speakableText, { signal }),
+  chunkerOptions: { firstClauseCommaFlush: true, minChunkChars: 16 },
+  maxConcurrentTts: 3,
+})) {
+  if (event.type === 'tts_audio') {
+    playPcmChunkInStrictOrder(event.clauseIndex, event.bytes);
+  }
+  if (callerStartedSpeaking()) {
+    turnController.triggerBargeIn('caller_interrupted'); // Instant AbortController cancel
+  }
+}
+
+// Verify GonnaCrash Level 25 3-Star SLA (750ms first audio, exact 663,289 UC)
+const sim25 = simulateLevel25VoiceAssistantLatency();
+console.log(sim25.verdict, sim25.costPerTaskUc, sim25.isThreeStarRecord); // 663289 true
+```
+
+---
+
+## 🧠 Level 26: Rolling Summary Conversation Memory Compression (`./conversation-memory`)
+
+> Distilled from **LangChain `ConversationSummaryBufferMemory`**, **Mem0 (~69k★ fact extraction)**, **Zep/Graphiti (~32k★ temporal superseding)**, **Letta (~25.5k★ core memory blocks)**, and **GonnaCrash World 3 Level 26 (`long_conversation_memory`)**.
+
+### Kiến Trúc Rolling Summary + Pinned Facts + Verbatim Sliding Window
+
+```mermaid
+flowchart LR
+    U["Long Chat Turn 24 (2 req/s · 5.18M/mo)"] --> FE["extractConversationFacts + mergeMemoryFacts (Mem0 + Zep Temporal Superseding)"]
+    FE -->|"Order #ORD-4821 · Budget $120 -> $150"| PF["[PINNED_FACTS] Block (Letta Core Memory)"]
+    U --> SW{"Recent Window (> 2 Pairs or > Threshold?)"}
+    SW -->|"Older Turns 1..20"| RS["RollingSummaryMemory (Async Summarizer + Zero-Dep Extractive Fallback)"]
+    SW -->|"Latest 4 Verbatim Messages"| RW["Recent Verbatim Window"]
+    RS --> ASM["Bounded Prompt Assembler ([system + summary + pinnedFacts + recent + turn])"]
+    PF --> ASM
+    RW --> ASM
+    ASM -->|"~540 tokens (-81% vs 2,840 full)"| LLM["LLM Provider (openai_small · 40,000 UC)"]
+    LLM -->|"Exact 40,289 UC (0.0403¢/task · ★★★)"| OUT["Back-Reference Accurate Answer (>= 85%)"]
+```
+
+### Cảnh Báo Bẫy Level 26: `Context Builder (Rules)` (`memory_dropped`)
+- **Resending Full 20–30 Turn History (`full_history_naive`)**: Đẩy chi phí lên `145,289 UC > 47,000 UC` (`history_resent` FAIL).
+- **`Context Builder (Rules)` Độc Lập (`last_turn_only_trap`)**: Cắt cứng chỉ giữ 1 lượt cuối -> mất sạch `Order #ORD-4821` và ngân sách cũ khi khách hỏi *"that order from earlier"* (`accuracy 58% < 85%`, `memory_dropped` FAIL).
+- **`Context Builder (Rules)` Đặt TRƯỚC `Conversation Memory` (`context_builder_before_memory_trap`)**: **Bẫy cực hiểm!** Trimmer phía trước đã xóa 21 lượt cũ *trước khi* `Conversation Memory` kịp tóm tắt hay trích xuất facts -> vẫn sập `memory_dropped` (`accuracy 61% < 85%`)!
+
+### OSS Conversation Memory Benchmarks vs `@kido/ai-stream/conversation-memory`
+
+| Framework / Engine | Pattern Được Chưng Cất | Runtime / Dependencies | Temporal Superseding & Back-Ref | Chi Phí Level 26 (`<= 47,000 UC`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **LangChain `ConversationSummaryBufferMemory`** | Hybrid verbatim recent window + rolling summary buffer | LangChain JS/Py + LLM calls | Summary-only (facts can drift) | Model-dependent |
+| **Mem0 (~69k★)** | Structured entity/preference extraction & deduplication | Vector + Graph DB stack | Fact-level memory updates | Managed / external DB |
+| **Zep / Graphiti (~32k★)** | Bi-temporal fact invalidation (`valid_at` / `invalid_at`) | Temporal KG service | Explicit fact superseding | Graph infra overhead |
+| **Letta / MemGPT (~25.5k★)** | Fixed-budget core memory blocks in system prompt | Stateful agent runtime | Explicit core block editing | Managed agent runtime |
+| **`@kido/ai-stream/conversation-memory`** | **Hybrid Rolling Summary + Pinned Facts + Temporal Superseding + LRU/TTL Scope** | **0 dependencies, pure TS** | **`validTurn`/`supersededAtTurn` + EN/VI `hasBackReference` + extractive fallback** | **`40,289 UC` (`0.0403¢/task` · ★★★ 3-Star Record)** |
+
+### GonnaCrash World 3 Level 26 Proof Matrix (`2 req/s` · `5,184,000 turns/mo`)
+
+> **Cost Anatomy**: `App Server (S)` = `289 UC` (`$15/mo / 5.184M`) + `Conversation Memory (Rolling summary)` = `0 UC` + `openai_small` = `40,000 UC` = **chính xác `40,289 UC` (`0.0403¢/task`)** <= trần `47,000 UC` (`0.0470¢/task`).
+
+| Strategy | Topology | LLM Model | Answered (`>= 99%`) | Accuracy (`>= 85%`) | Cost / Turn (`<= 47,000 UC`) | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`full_history_naive`** | `App(S)` + Full 24-Turn History Resent | `openai_small` | `99.8%` | `93.5%` | **`145,289 UC`** (`0.1453¢`) | **FAIL** (`history_resent`, `budget_exceeded`) |
+| **`last_turn_only_trap`** | `App(S)` + `Context Builder (Rules)` | `openai_small` | `99.8%` | **`58.0%`** (`14%` back-ref) | `16,289 UC` (`0.0163¢`) | **FAIL** (`memory_dropped`) |
+| **`context_builder_before_memory_trap`** | `App(S)` + `Context Builder (Rules)` -> `Conversation Memory` | `openai_small` | `99.8%` | **`61.0%`** (`18%` back-ref) | `18,789 UC` (`0.0188¢`) | **FAIL** (`memory_dropped`, `upstream_context_truncated`) |
+| **`rolling_summary_mid_model`** | `App(S)` + `Conversation Memory` | `openai_mid` | `99.8%` | `94.0%` | **`120,289 UC`** (`0.1203¢`) | **FAIL** (`budget_exceeded`) |
+| **`rolling_summary_three_star`** | **`App(S)` + `Conversation Memory (Rolling summary, per_chat)`** | **`openai_small`** | **`99.8%`** | **`90.5%`** (`89.2%` back-ref) | **`40,289 UC`** (`0.0403¢`) | **PASSED (★★★ 3-Star Record)** |
+
+### Quickstart: `@kido/ai-stream/conversation-memory`
+```typescript
+import {
+  createRollingSummaryMemory,
+  buildLastTurnOnlyPrompt,
+  simulateLevel26LongConversationMemory,
+} from '@kido/ai-stream/conversation-memory';
+
+const memory = createRollingSummaryMemory({
+  recentWindowTurns: 2, // Keep latest 4 verbatim messages (2 user+assistant pairs)
+  maxTotalTokens: 900,
+  maxSummaryTokens: 200,
+  scope: 'per_chat',    // Strict per-session isolation (never leaks across shoppers)
+  sharedWith: 'one_bot',
+  maxSessions: 500,
+  ttlMs: 30 * 60_000,
+});
+
+const built = await memory.buildPrompt({
+  sessionId: 'shopper-4821',
+  systemPrompt: 'You are CommerceCopilot helping shoppers manage orders.',
+  turns: longChatHistory22Turns, // Turn 1: Order #ORD-4821 ($120); Turn 3: budget updated to $150
+  currentTurn: 'Can we still expedite that order from earlier within my updated budget?',
+});
+
+// built.messages => [system, [CONVERSATION_SUMMARY], [PINNED_FACTS] order_id=ORD-4821 | budget=$150, ...recent4, currentTurn]
+console.log(built.metrics.tokensSaved, built.metrics.backReferenceDetected, built.pinnedFactsBlock);
+
+// Compare against Context Builder (Rules) anti-pattern:
+const trapped = buildLastTurnOnlyPrompt({
+  history: longChatHistory22Turns,
+  currentTurn: 'Can we still expedite that order from earlier?',
+});
+console.log(trapped.antiPattern, trapped.droppedFactsCount); // 'last_turn_only_memory_dropped'
+
+// Verify GonnaCrash Level 26 3-Star SLA (exact 40,289 UC / 0.0403¢)
+const sim26 = simulateLevel26LongConversationMemory();
+console.log(sim26.verdict, sim26.costPerTaskUc, sim26.isThreeStarRecord); // 40289 true
 ```
 
 ---

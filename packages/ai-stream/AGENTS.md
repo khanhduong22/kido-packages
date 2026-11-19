@@ -1,7 +1,7 @@
 # Package Directives: @kido/ai-stream
 
-> **Scope**: Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, RAG Security Guard (Dual-Layer Guardrail Cascade & Canary Shield), Multi-Provider Fallback, 3-Tier RAG Pipeline, EDoS Quota Shield, Entity-Aware Semantic Cache, Intelligent Model Routing / FrugalGPT Cascade, Out-of-Band Offline Eval Gate & Structured Feature Launch Delivery Suite.  
-> **Standards Reference**: GonnaCrash World 3 Level 02 `faster_answers`, Level 03 `rpm_ceiling`, Level 07 `public_launch`, Level 08 `internal_docs_qa`, Level 09 `find_the_right_chunk`, Level 10 `fresh_docs_hourly`, Level 12 `bloated_tickets`, Level 13 `budget_burning_chatbot`, Level 14 `same_question_new_words`, Level 15 `cheap_model_first`, Level 18 `eval_before_release`, Level 19 `ai_feature_launch`, Level 20 `poisoned_chat_text`, OpenAI Chat Completion Stream Protocol, WHATWG ReadableStream & TextDecoder Streaming Standards, RouteLLM, FrugalGPT, Shopify Storefront AI, Vercel AI SDK, Perplexity Product Cards, Llama Guard, Braintrust Canary, Anthropic Constitutional Classifiers, Enterprise AI RAG & Offline Eval Architecture.
+> **Scope**: Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, RAG Security Guard (Dual-Layer Guardrail Cascade & Canary Shield), Multi-Provider Fallback, 3-Tier RAG Pipeline, EDoS Quota Shield, Entity-Aware Semantic Cache, Intelligent Model Routing / FrugalGPT Cascade, Out-of-Band Offline Eval Gate, Structured Feature Launch Delivery, Full-Duplex Voice Streaming Pipeline & Rolling Summary Conversation Memory Suite.  
+> **Standards Reference**: GonnaCrash World 3 Level 02 `faster_answers`, Level 03 `rpm_ceiling`, Level 07 `public_launch`, Level 08 `internal_docs_qa`, Level 09 `find_the_right_chunk`, Level 10 `fresh_docs_hourly`, Level 12 `bloated_tickets`, Level 13 `budget_burning_chatbot`, Level 14 `same_question_new_words`, Level 15 `cheap_model_first`, Level 18 `eval_before_release`, Level 19 `ai_feature_launch`, Level 20 `poisoned_chat_text`, Level 25 `voice_assistant_latency`, Level 26 `long_conversation_memory`, OpenAI Chat Completion Stream Protocol, WHATWG ReadableStream & TextDecoder Streaming Standards, RouteLLM, FrugalGPT, Shopify Storefront AI, Vercel AI SDK, Perplexity Product Cards, Llama Guard, Braintrust Canary, Anthropic Constitutional Classifiers, LiveKit Agents, Pipecat, Deepgram Streaming STT, ElevenLabs WebSocket TTS, LangChain ConversationSummaryBufferMemory, Mem0, Zep/Graphiti, Letta, Enterprise AI RAG & Offline Eval Architecture.
 
 ## 1. Core Invariants & Boundaries
 
@@ -49,6 +49,17 @@
    - `ValidatedSemanticCacheGate` MUST reject malformed/NaN/schema-violating payloads at write time (`writeBlockedInvalidJson`), evict corrupt cached entries on read (`readEvictedInvalidJson`), and isolate entity fingerprints (`"size M"` never hits `"size L"`).
    - `streamWithWaitingFeedback` MUST flush `event: waiting\ndata: {...}\n\n` immediately when upstream `onRetry(attempt, delayMs, reason)` fires.
    - `simulateLevel19AiFeatureLaunch()` verifies GonnaCrash Level 19 Boss-Fight 3-Star Record `0.3558¢/task` (`355,785 UC <= 410,000 UC`), `>=99.9%` answered, `<=2,000ms` TTFT, and `>=94.0%` accuracy against all 5 failure modes.
+12. **Full-Duplex Voice Streaming & Sentence-Level Chunking Invariants (`src/voice-pipeline/`)**:
+   - `src/voice-pipeline/` MUST remain 100% self-contained with zero imports from sibling slices and zero external runtime dependencies.
+   - `VoiceSentenceChunker` & `sanitizeForSpeech` MUST prevent false splits on bilingual EN/VI abbreviations (`Mr.`, `Dr.`, `TP.`, `v.v.`, `e.g.`), decimals/currency (`1.2s`, `150.000đ`, `1,200 ms`), URLs, and numbered lists while supporting early `firstClauseCommaFlush` and markdown stripping.
+   - `VoiceTurnController` MUST enforce the full-duplex state machine (`idle -> listening -> processing -> speaking -> interrupted`) and propagate barge-in cancellation instantly via `AbortController` so `runVoiceStreamPipeline` emits zero stale audio after interruption while maintaining strict FIFO clause playback ordering under concurrent TTS synthesis.
+   - `simulateLevel25VoiceAssistantLatency()` verifies GonnaCrash World 3 Level 25 (`voice_assistant_latency`) 3-Star Record `663,289 UC` (`289` App + `50,000` STT + `600,000` TTS + `13,000` `openai_small` <= `770,000 UC` budget) at `750ms <= 1,200ms` first audio, `87.0% >= 85%` accuracy, and `99.8% >= 99%` answered — proving `serial_batch` (`4,400ms`), `partial_streaming` (`2,740ms`), and `streaming_mid_model` (`openai_mid` -> `910,289 UC > 770,000 UC`) fail SLA.
+13. **Conversation Memory Compression & Sliding Window Summarization Invariants (`src/conversation-memory/`)**:
+   - `src/conversation-memory/` MUST remain 100% self-contained with zero imports from sibling slices and zero external runtime dependencies.
+   - `extractConversationFacts` & `mergeMemoryFacts` MUST preserve durable entity anchors (order IDs, ticket IDs, SKUs, budgets, colors, plans, shipping, products) with latest-wins temporal superseding (`validTurn`, `supersededAtTurn`) so updated user constraints never conflict with stale turns.
+   - `RollingSummaryMemory` MUST enforce strict `scope` (`per_chat` | `global`), `sharedWith` (`one_bot` | `all_bots`), bounded LRU `maxSessions`, TTL expiry (`nowFn`), and graceful fallback to `buildExtractiveRollingSummary` whenever a custom async `summarizer` fails or returns empty (zero silent catches, zero dropped memory).
+   - Never place `Context Builder (Rules)` (`buildLastTurnOnlyPrompt`) upstream of `Conversation Memory` — hard-trimming to the last turn drops earlier entity anchors before summarization can see them (`memory_dropped`, accuracy `< 85%`).
+   - `simulateLevel26LongConversationMemory()` verifies GonnaCrash World 3 Level 26 (`long_conversation_memory`) 3-Star Record **`40,289 UC`** (`289` App + `0` Memory + `40,000` `openai_small` <= `47,000 UC` / `0.0470¢` budget) with `>= 99%` answered & `>= 85%` accuracy against `full_history_naive` (`history_resent`), `last_turn_only_trap` (`memory_dropped`), `context_builder_before_memory_trap` (`memory_dropped`), and `rolling_summary_mid_model` (`budget_exceeded`).
 
 ## 2. Directory Layout
 
@@ -69,8 +80,10 @@ packages/ai-stream/
 │   ├── model-router/             # Intelligent Model Routing & FrugalGPT Cascade (Level 15)
 │   ├── eval-gate/                # Out-of-Band Offline Eval Gate & LLM-as-a-Judge (Level 18)
 │   ├── structured-launch/        # Partial JSON, Validated Cache & Waiting SSE Bridge (Level 19)
+│   ├── voice-pipeline/           # Full-Duplex Voice Streaming, Sentence Chunker & Barge-In (Level 25)
+│   ├── conversation-memory/      # Rolling Summary, Pinned Facts & Sliding Window Memory (Level 26)
 │   └── index.test.ts             # Streaming, rate-guard, fallback & RAG unit tests
-├── test/                         # Level 09/10/12/13/14/15/18/19 integration suites
+├── test/                         # Level 09/10/12/13/14/15/18/19/20/25/26 integration suites
 ├── tsup.config.ts
 ├── tsconfig.json
 ├── package.json

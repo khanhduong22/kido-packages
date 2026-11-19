@@ -1,7 +1,7 @@
 {
   "name": "@kido/ai-stream",
   "version": "1.0.0",
-  "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, 3-Tier RAG Pipeline, Cross-Encoder Reranker, Ingestion Pacing, Context Sanitizer, EDoS Quota Shield, Entity-Aware Semantic Cache, Intelligent Model Routing & FrugalGPT Cascade, Out-of-Band Offline Eval Gate, Structured Product Card Launch (Partial JSON + Validated Cache + Waiting SSE) & Dual-Layer Guardrail Cascade + Canary Kill-Switch Suite",
+  "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, 3-Tier RAG Pipeline, Cross-Encoder Reranker, Ingestion Pacing, Context Sanitizer, EDoS Quota Shield, Entity-Aware Semantic Cache, Intelligent Model Routing & FrugalGPT Cascade, Out-of-Band Offline Eval Gate, Structured Product Card Launch, Dual-Layer Guardrail Cascade + Canary Kill-Switch, Full-Duplex Voice Streaming Pipeline & Rolling Summary Conversation Memory Suite",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -65,13 +65,25 @@
       "import": "./dist/structured-launch.mjs",
       "require": "./dist/structured-launch.js",
       "default": "./src/structured-launch/index.ts"
+    },
+    "./voice-pipeline": {
+      "types": "./dist/voice-pipeline.d.ts",
+      "import": "./dist/voice-pipeline.mjs",
+      "require": "./dist/voice-pipeline.js",
+      "default": "./src/voice-pipeline/index.ts"
+    },
+    "./conversation-memory": {
+      "types": "./dist/conversation-memory.d.ts",
+      "import": "./dist/conversation-memory.mjs",
+      "require": "./dist/conversation-memory.js",
+      "default": "./src/conversation-memory/index.ts"
     }
   },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx src/index.test.ts src/rag-security-guard/index.test.ts test/ai-stream.test.ts test/quota-manager.test.ts test/semantic-cache.test.ts test/model-router.test.ts test/eval-gate.test.ts test/structured-launch.test.ts test/guardrail-cascade.test.ts"
+    "test": "node --test --import tsx src/index.test.ts src/rag-security-guard/index.test.ts test/ai-stream.test.ts test/quota-manager.test.ts test/semantic-cache.test.ts test/model-router.test.ts test/eval-gate.test.ts test/structured-launch.test.ts test/guardrail-cascade.test.ts test/voice-pipeline.test.ts test/conversation-memory.test.ts"
   },
   "dependencies": {},
   "devDependencies": {
