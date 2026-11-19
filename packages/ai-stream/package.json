@@ -1,7 +1,7 @@
 {
   "name": "@kido/ai-stream",
   "version": "1.0.0",
-  "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, 3-Tier RAG Pipeline, Cross-Encoder Reranker, Ingestion Pacing, Context Sanitizer, EDoS Quota Shield, Entity-Aware Semantic Cache, Intelligent Model Routing & FrugalGPT Cascade & RAG Security Guard Suite",
+  "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, Multi-Provider Fallback, 3-Tier RAG Pipeline, Cross-Encoder Reranker, Ingestion Pacing, Context Sanitizer, EDoS Quota Shield, Entity-Aware Semantic Cache, Intelligent Model Routing & FrugalGPT Cascade, Out-of-Band Offline Eval Gate, Structured Product Card Launch (Partial JSON + Validated Cache + Waiting SSE) & Dual-Layer Guardrail Cascade + Canary Kill-Switch Suite",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -53,13 +53,25 @@
       "import": "./dist/model-router.mjs",
       "require": "./dist/model-router.js",
       "default": "./src/model-router/index.ts"
+    },
+    "./eval-gate": {
+      "types": "./dist/eval-gate.d.ts",
+      "import": "./dist/eval-gate.mjs",
+      "require": "./dist/eval-gate.js",
+      "default": "./src/eval-gate/index.ts"
+    },
+    "./structured-launch": {
+      "types": "./dist/structured-launch.d.ts",
+      "import": "./dist/structured-launch.mjs",
+      "require": "./dist/structured-launch.js",
+      "default": "./src/structured-launch/index.ts"
     }
   },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --import tsx src/index.test.ts src/rag-security-guard/index.test.ts test/ai-stream.test.ts test/quota-manager.test.ts test/semantic-cache.test.ts test/model-router.test.ts"
+    "test": "node --test --import tsx src/index.test.ts src/rag-security-guard/index.test.ts test/ai-stream.test.ts test/quota-manager.test.ts test/semantic-cache.test.ts test/model-router.test.ts test/eval-gate.test.ts test/structured-launch.test.ts test/guardrail-cascade.test.ts"
   },
   "dependencies": {},
   "devDependencies": {

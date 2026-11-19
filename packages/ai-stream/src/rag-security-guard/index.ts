@@ -1,12 +1,18 @@
 /**
  * @kido/ai-stream/rag-security-guard
  *
- * Enterprise RAG & AI Copilot Security Guard:
+ * Enterprise RAG & AI Copilot Security Guard (including GonnaCrash World 3 Level 20):
  * 1. Streaming and batch credential DLP redaction (`dlp-redactor.ts`)
  * 2. Fail-closed scope/channel ACL resolver & zero-cost intent gate (`scope-acl.ts`)
  * 3. Prompt boundary escaping, clamping & progressive chat edit throttling (`prompt-boundary.ts`)
+ * 4. Dual-layer permissive guardrail cascade (`guardrail-cascade.ts`)
+ * 5. System-prompt canary token & sliding-holdback mid-stream kill-switch (`canary-token-guard.ts`)
+ * 6. GonnaCrash World 3 Level 20 `poisoned_chat_text` 3-Star verifier (`level20-simulator.ts`)
  */
 
 export * from './dlp-redactor.js';
 export * from './scope-acl.js';
 export * from './prompt-boundary.js';
+export * from './guardrail-cascade.js';
+export * from './canary-token-guard.js';
+export * from './level20-simulator.js';

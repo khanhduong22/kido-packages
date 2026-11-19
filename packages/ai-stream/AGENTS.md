@@ -1,7 +1,7 @@
 # Package Directives: @kido/ai-stream
 
-> **Scope**: Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, RAG Security Guard, Multi-Provider Fallback, 3-Tier RAG Pipeline, EDoS Quota Shield, Entity-Aware Semantic Cache & Intelligent Model Routing / FrugalGPT Cascade Suite.  
-> **Standards Reference**: GonnaCrash World 3 Level 02 `faster_answers`, Level 03 `rpm_ceiling`, Level 07 `public_launch`, Level 08 `internal_docs_qa`, Level 09 `find_the_right_chunk`, Level 10 `fresh_docs_hourly`, Level 12 `bloated_tickets`, Level 13 `budget_burning_chatbot`, Level 14 `same_question_new_words`, Level 15 `cheap_model_first`, OpenAI Chat Completion Stream Protocol, WHATWG ReadableStream & TextDecoder Streaming Standards, RouteLLM, FrugalGPT, Enterprise AI RAG Architecture.
+> **Scope**: Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, RPM/TPM Rate Guard, RAG Security Guard (Dual-Layer Guardrail Cascade & Canary Shield), Multi-Provider Fallback, 3-Tier RAG Pipeline, EDoS Quota Shield, Entity-Aware Semantic Cache, Intelligent Model Routing / FrugalGPT Cascade, Out-of-Band Offline Eval Gate & Structured Feature Launch Delivery Suite.  
+> **Standards Reference**: GonnaCrash World 3 Level 02 `faster_answers`, Level 03 `rpm_ceiling`, Level 07 `public_launch`, Level 08 `internal_docs_qa`, Level 09 `find_the_right_chunk`, Level 10 `fresh_docs_hourly`, Level 12 `bloated_tickets`, Level 13 `budget_burning_chatbot`, Level 14 `same_question_new_words`, Level 15 `cheap_model_first`, Level 18 `eval_before_release`, Level 19 `ai_feature_launch`, Level 20 `poisoned_chat_text`, OpenAI Chat Completion Stream Protocol, WHATWG ReadableStream & TextDecoder Streaming Standards, RouteLLM, FrugalGPT, Shopify Storefront AI, Vercel AI SDK, Perplexity Product Cards, Llama Guard, Braintrust Canary, Anthropic Constitutional Classifiers, Enterprise AI RAG & Offline Eval Architecture.
 
 ## 1. Core Invariants & Boundaries
 
@@ -29,13 +29,26 @@
 7. **Strict Grounding & Anti-Hallucination Invariant**:
    - `buildGroundedPrompt()` injects strict negative constraints ("Do NOT guess, speculate, or hallucinate procedures that are not explicitly documented; explicitly state information is missing").
    - `extractSourceCitations()` parses `[Doc N]` references, enforcing verifiable attribution.
-8. **RAG Security Guard & Streaming DLP Invariants (`src/rag-security-guard/`)**:
+8. **RAG Security Guard, Streaming DLP & Level 20 Dual-Layer Guardrail Invariants (`src/rag-security-guard/`)**:
    - `FailClosedScopeResolver` MUST fail closed (`allowed: false, scopes: []`) on missing `userId`, unwhitelisted scope, or verifier exception, and MUST pin non-DM channel requests to `currentScope`.
    - `StreamingDlpRedactor` MUST hold back incomplete tokens/credential lines so split secrets are scrubbed before emission; `ProgressiveMessageEditThrottler` MUST emit `SAFE_UPSTREAM_UNAVAILABLE_MESSAGE` on upstream errors without dumping raw RAG snippets.
+   - `DualLayerGuardrailCascade` MUST remain self-contained inside `src/rag-security-guard/` (zero external runtime deps, zero imports from sibling slices) and run Layer 1 (`evaluateFastJevGuard`: NFKC + zero-width strip + Base64/Hex/URL decoding in `'permissive'` mode with `0%` false-positive recall loss on tricky benign queries) -> Layer 2 (`evaluateSemanticJudgeGuard`: orthogonal roleplay/translation-exfil/tag-spoofing + async `customJudgeFn`) in series.
+   - `CanaryStreamKillSwitch` MUST hold back at least `canaryToken.length + 8` chars (plus viable variant prefixes) so raw, case-folded, spaced, and Base64 canary leaks split across SSE chunks abort mid-stream with `0` leaked characters and emit a safe refusal.
+   - `simulateLevel20PoisonedChatText()` verifies GonnaCrash Level 20 3-Star Best Cost `46,622 UC <= 54,000 UC` (`Jev [1,050] + Judge [18,283] + openai_small [27,289]`), `<= 0.1%` leak, `>= 99%` answered, and `<= 6,000ms` latency against `unguarded`, `single_jev_permissive`, `duplicate_jev_permissive`, and `strict_policy_guard`.
 9. **Intelligent Model Routing & FrugalGPT Cascade Invariants (`src/model-router/`)**:
    - `src/model-router/` MUST remain 100% self-contained with zero imports from sibling slices (`rag-pipeline`, `semantic-cache`, `rpm-rate-guard`, etc.) and zero external runtime dependencies.
    - `PromptComplexityClassifier` MUST evaluate in `<1ms` without blocking I/O; `zero_cost` greetings/acknowledgments MUST never burn LLM tokens (`0¢`), `easy` queries MUST stay off `large`-tier RPM budgets, and `large`-tier RPM ceiling saturation MUST degrade gracefully (`small_fallback` / `static_fallback`) rather than crashing with HTTP 429.
    - `simulateLevel15CheapModelFirst()` verifies GonnaCrash Level 15 3-Star Best Cost `0.6599¢/task` (`659,856 UC <= 760,000 UC`), `>=99%` answered (`0` 429s), `<2,000ms` TTFT, `>=93%` hard accuracy, and `>=85%` overall accuracy.
+10. **Out-of-Band Offline Eval Gate & Judge Calibration Invariants (`src/eval-gate/`)**:
+   - `src/eval-gate/` MUST remain 100% self-contained with zero imports from sibling slices and zero external runtime dependencies.
+   - `OfflineEvalGate` runs strictly out-of-band on the control plane (`liveHotPathLatencyMs: 0`) and MUST block release (`BLOCK_RELEASE`, preserving active prompt version intact) on any critical regression, pass rate `< 90%`, net drop vs baseline, cost/budget breach, or `p95TtftMs > maxTtftMs`.
+   - `simulateLevel18EvalBeforeRelease()` verifies GonnaCrash Level 18 3-Star Best Cost `0.5422¢/task` (`542,218 UC <= 630,000 UC`), `100%` answered (`>=99%`), `420ms` TTFT (`<=2,000ms`), and `94.0%` accuracy (`>=90%`).
+11. **Full-Stack Structured Launch Delivery Invariants (`src/structured-launch/`)**:
+   - `src/structured-launch/` MUST remain 100% self-contained with zero imports from sibling slices and zero external runtime dependencies, and MUST NOT duplicate exponential-backoff math owned by `src/rpm-rate-guard/`.
+   - `parsePartialJson` & `StreamingProductCardExtractor` MUST strip ` ```json ` fences, preserve Vietnamese diacritics & escaped quotes, drop incomplete trailing keys/colons/commas, close strings & `{`/`[` LIFO, and emit cards progressively as each `{...}` closes.
+   - `ValidatedSemanticCacheGate` MUST reject malformed/NaN/schema-violating payloads at write time (`writeBlockedInvalidJson`), evict corrupt cached entries on read (`readEvictedInvalidJson`), and isolate entity fingerprints (`"size M"` never hits `"size L"`).
+   - `streamWithWaitingFeedback` MUST flush `event: waiting\ndata: {...}\n\n` immediately when upstream `onRetry(attempt, delayMs, reason)` fires.
+   - `simulateLevel19AiFeatureLaunch()` verifies GonnaCrash Level 19 Boss-Fight 3-Star Record `0.3558¢/task` (`355,785 UC <= 410,000 UC`), `>=99.9%` answered, `<=2,000ms` TTFT, and `>=94.0%` accuracy against all 5 failure modes.
 
 ## 2. Directory Layout
 
@@ -54,8 +67,10 @@ packages/ai-stream/
 │   ├── quota-manager/            # 3-Layer EDoS Shield & Per-User Token Quota (Level 13)
 │   ├── semantic-cache/           # Entity-Aware Strict Semantic Cache (Level 14)
 │   ├── model-router/             # Intelligent Model Routing & FrugalGPT Cascade (Level 15)
+│   ├── eval-gate/                # Out-of-Band Offline Eval Gate & LLM-as-a-Judge (Level 18)
+│   ├── structured-launch/        # Partial JSON, Validated Cache & Waiting SSE Bridge (Level 19)
 │   └── index.test.ts             # Streaming, rate-guard, fallback & RAG unit tests
-├── test/                         # Level 09/10/12/13/14/15 integration suites
+├── test/                         # Level 09/10/12/13/14/15/18/19 integration suites
 ├── tsup.config.ts
 ├── tsconfig.json
 ├── package.json

@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "updatedAt": "2026-11-18T07:55:34.697Z",
   "totalPackages": 39,
-  "totalSlices": 115,
+  "totalSlices": 117,
   "pillars": [
     {
       "id": 1,
@@ -1040,7 +1040,7 @@
           "name": "@kido/ai-stream",
           "shortName": "ai-stream",
           "path": "packages/ai-stream",
-          "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, Dual RPM/TPM Rate Guard & RAG Security Guard Combo (GonnaCrash World 3 Level 02 faster_answers & Level 03 rpm_ceiling Architecture):",
+          "description": "Tier-1 AI Token Streaming, Server-Sent Events (SSE), Fetch ReadableStream Consumer, Edge Buffer Flushing, Dual RPM/TPM Rate Guard, Dual-Layer Guardrail Cascade & Canary Shield, Model Router, Offline Eval Gate & Structured Feature Launch Combo (GonnaCrash World 3 Levels 02-20 Architecture):",
           "slices": [
             {
               "name": "edge-flush-headers",
@@ -1139,9 +1139,22 @@
                 "clampMessageAtBoundary",
                 "SAFE_UPSTREAM_UNAVAILABLE_MESSAGE",
                 "ProgressiveMessageEditThrottler",
-                "streamToEditableMessage"
+                "streamToEditableMessage",
+                "GuardrailPolicyMode",
+                "GuardrailRiskCategory",
+                "GuardrailLayerVerdict",
+                "GuardrailCascadeResult",
+                "evaluateFastJevGuard",
+                "evaluateSemanticJudgeGuard",
+                "DualLayerGuardrailCascade",
+                "createDualLayerGuardrailCascade",
+                "generateCanaryToken",
+                "injectSystemCanary",
+                "detectCanaryLeak",
+                "CanaryStreamKillSwitch",
+                "simulateLevel20PoisonedChatText"
               ],
-              "description": "src/rag-security-guard/ (./rag-security-guard)"
+              "description": "src/rag-security-guard/ (./rag-security-guard) — Streaming DLP, Fail-Closed ACL, Level 20 Dual-Layer Permissive Guardrail Cascade & Canary Kill-Switch"
             },
             {
               "name": "model-router",
@@ -1166,6 +1179,75 @@
                 "simulateLevel15CheapModelFirst"
               ],
               "description": "src/model-router/ (./model-router)"
+            },
+            {
+              "name": "eval-gate",
+              "path": "src/eval-gate/",
+              "type": "directory",
+              "packageName": "@kido/ai-stream",
+              "packagePath": "packages/ai-stream",
+              "exports": [
+                "EvalCaseProperty",
+                "EvalGoldenCase",
+                "EvalCandidateOutput",
+                "EvalPropertyGradeResult",
+                "gradeEvalCaseProperties",
+                "evaluateGroundednessScore",
+                "JudgeCalibrationSample",
+                "JudgeCalibrationReport",
+                "calibrateJudgeAgreement",
+                "computeMultiTrialConsistency",
+                "OfflineEvalGate",
+                "createOfflineEvalGate",
+                "compareEvalRunsPerCase",
+                "verifyGateWithSeededRegression",
+                "simulateLevel18EvalBeforeRelease"
+              ],
+              "description": "src/eval-gate/ (./eval-gate)"
+            },
+            {
+              "name": "structured-launch",
+              "path": "src/structured-launch/",
+              "type": "directory",
+              "packageName": "@kido/ai-stream",
+              "packagePath": "packages/ai-stream",
+              "exports": [
+                "PartialJsonParseResult",
+                "parsePartialJson",
+                "StreamingProductCardExtractorOptions",
+                "StreamingProductCardExtractor",
+                "createStreamingProductCardExtractor",
+                "StrictJsonFieldType",
+                "StrictJsonFieldRule",
+                "StrictJsonSchemaSpec",
+                "StrictJsonValidationResult",
+                "validateStrictJsonPayload",
+                "StrictCacheExtractedEntities",
+                "extractStrictCacheEntities",
+                "computeStrictEntityFingerprint",
+                "ValidatedSemanticCacheOptions",
+                "ValidatedCacheStoreInput",
+                "ValidatedCacheStoreResult",
+                "ValidatedCacheLookupResult",
+                "ValidatedSemanticCacheStats",
+                "ValidatedSemanticCacheGate",
+                "createValidatedSemanticCacheGate",
+                "WaitingFeedbackEvent",
+                "WaitingFeedbackFrameInput",
+                "WaitingBridgeContext",
+                "StreamWithWaitingFeedbackOptions",
+                "formatSseWaitingFrame",
+                "parseSseWaitingFrame",
+                "createRateGuardWaitingBridge",
+                "streamWithWaitingFeedback",
+                "Level19LaunchStrategy",
+                "Level19SimulationOptions",
+                "Level19StrategySnapshot",
+                "Level19ProbeSummary",
+                "Level19SimulationResult",
+                "simulateLevel19AiFeatureLaunch"
+              ],
+              "description": "src/structured-launch/ (./structured-launch)"
             }
           ]
         }

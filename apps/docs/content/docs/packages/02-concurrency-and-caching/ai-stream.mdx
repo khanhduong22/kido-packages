@@ -90,10 +90,13 @@ flowchart TD
 - `computeFullJitterBackoffMs(options)` & `computeDecorrelatedJitterMs(options)`: AWS/Stripe-standard jitter backoff eliminating 100% of retry storms.
 - `executeWithAiRateGuard(operation, options)`: Execution wrapper with automated `Retry-After` / `retry-after-ms` / `x-ratelimit-reset-*` header parsing.
 
-### 5. RAG Security Guard & Streaming DLP (`src/rag-security-guard/`)
+### 5. RAG Security Guard, Streaming DLP & Level 20 Defense-in-Depth (`src/rag-security-guard/`)
 - `redactCredentialsDlp(text)` & `StreamingDlpRedactor`: 18-rule credential scrubber with a sliding tail holdback buffer so secrets split across 1-byte or arbitrary SSE chunks (`whsec_*`, `sk_live_*`, JWTs, `.env` keys, DB URIs) are redacted before emission while preserving standard HTTPS archive links.
 - `FailClosedScopeResolver<TScope>` & `classifyZeroCostIntent(query, options)`: Fail-closed TTL-cached scope/channel ACL resolver with `pinToCurrentScope` (anti-keyword hijack) and zero-cost short-circuiting for greetings, capability probes, and interactive fallback placeholders.
 - `escapeBoundaryTags`, `wrapUntrustedRagContext`, `detectPromptOverrideAttempt`, `clampMessageAtBoundary`, `SAFE_UPSTREAM_UNAVAILABLE_MESSAGE`, & `ProgressiveMessageEditThrottler` (`streamToEditableMessage`): XML delimiter hardening, prompt-override detection, and throttled editable-message streaming with fail-closed fallback on `503`/upstream errors.
+- `evaluateFastJevGuard`, `evaluateSemanticJudgeGuard`, & `DualLayerGuardrailCascade` (`createDualLayerGuardrailCascade`): Orthogonal Level 20 input guardrail cascade combining fast NFKC/zero-width/Base64/Hex/URL normalization + bilingual EN/VI permissive lexical checks (Layer 1, `1,050 UC`) with semantic roleplay/translation-exfil/tag-spoofing analysis + async `customJudgeFn` hook (Layer 2, `18,283 UC`), preserving `0%` false positives on tricky benign ArtSupplyStore / CommerceCopilot queries.
+- `generateCanaryToken`, `injectSystemCanary`, `detectCanaryLeak`, & `CanaryStreamKillSwitch`: Cryptographic canary injection + raw/case-folded/spaced/Base64 leak detector + sliding holdback buffer (`canaryToken.length + 8` chars) aborting split-chunk SSE streams with `0` leaked canary characters.
+- `simulateLevel20PoisonedChatText(options?)`: Deterministic GonnaCrash World 3 Level 20 verifier (`300s @ 4 req/s = 1,200` tasks, `1%` baseline + `3%` forum-bypass surge) proving `dual_permissive_cascade` achieves `0.00%` leak (`<= 0.1%`), `100%` answered (`>= 99%`), `820ms` latency (`<= 6,000ms`), and exact `46,622 UC` (`<= 54,000 UC`).
 
 ### 6. Level 15 (`cheap_model_first`): Intelligent Model Routing & FrugalGPT Cascade (`src/model-router/`)
 - `PromptComplexityClassifier` & `calibrateRouteThreshold(samples, targetHardShareOrBudget)`: Sub-millisecond bilingual (English & Vietnamese) complexity classifier combining zero-cost local detection (`zero_cost` at `0¢`), structural difficulty heuristics (stack traces, code blocks, JSON payloads, webhook HMAC debug, multi-constraint budget combos, architectural comparisons), and router-local trigram utterance centroids (`RouteUtteranceCentroid[]`), paired with RouteLLM-style max-margin threshold calibration (`tau`).
@@ -126,6 +129,84 @@ flowchart LR
 | **Portkey / LiteLLM Semantic Router** | Rule + embedding intent centroids to model pools | Gateway / external embeddings | Workload-dependent | Policy-driven | Routing + provider fallback |
 | **Stanford FrugalGPT** | Cascade: try cheap model first + scorer escalating to strong LLM | Python cascade pipeline | Workload-dependent | High via escalation | Sequential cascade |
 | **`@kido/ai-stream/model-router`** | **Heuristic + Trigram Centroids + Calibrated `tau` + FrugalGPT + RPM Guard** | **0 dependencies, `&lt;1ms` EN/VI TS; 340 ms TTFT** | **`0.6599¢` (`659,856 UC`)** | **`96.25%` / `90.45%`** | **PASSED (3-Star Record, 0 429s)** |
+
+### 7. Level 18 (`eval_before_release`): Out-of-Band Offline Eval Gate & LLM-as-a-Judge (`src/eval-gate/`)
+- `gradeEvalCaseProperties` & `evaluateGroundednessScore`: Code-first property assertions (`contains_all`, `not_contains`, `json_valid`, `citation_required`, `refusal_check`, `no_pii`, `exact_amount`, `grounded_in_context`, `custom`) with deterministic price/SKU/number normalization (`145k` = `145,000 VND`) catching silent prompt hallucinations before release.
+- `calibrateJudgeAgreement` & `computeMultiTrialConsistency`: Computes exact agreement %, Cohen&apos;s kappa, precision/recall, same-family self-preference bias warnings (preferring cross-family judges), plus `pass@1`, `pass@k`, and `pass^k` (`passHatK`) multi-trial consistency.
+- `OfflineEvalGate`, `compareEvalRunsPerCase` & `verifyGateWithSeededRegression`: Runs strictly out-of-band on the control plane (`0ms` live hot-path latency) and emits `BLOCK_RELEASE` (preserving `activePromptVersion` intact) on any critical case regression, pass rate `&lt; 90%`, net drop vs baseline, cost/budget breach (`&gt; 630,000 UC` / `&gt; +10%`), or `p95TtftMs &gt; 2,000ms`.
+- `simulateLevel18EvalBeforeRelease(options?)`: Deterministic GonnaCrash World 3 Level 18 3-Star verifier proving `0.5422¢/task` (`542,218 UC &lt;= 630,000 UC`), `100%` answered (`&gt;= 99%`), `420ms` TTFT (`&lt;= 2,000ms`), and `94.0%` accuracy (`&gt;= 90%`) while blocking a bad `t=40s` prompt release.
+
+```mermaid
+flowchart LR
+    U["Live Users (2 req/s)"] -->|"http (Data Plane)"| APP["App Server (Tier S · 0ms Eval Latency)"]
+    APP -->|"llm (stream: true)"| LLM["LLM Provider (openai_mid · 420ms TTFT)"]
+    EG["Offline Eval Gate (Control Plane · Golden Set + Judge)"] -->|"eval (out-of-band)"| LLM
+    EG -.->|"ALLOW_RELEASE / BLOCK_RELEASE (keep v1.0-stable)"| APP
+```
+
+#### Level 18 Benchmark & Eval Framework Comparison
+
+| Strategy / Tool | Mechanism | Runtime & Dependencies | Hot-Path Latency | Cost / Accuracy (Level 18) | SLA Verdict |
+|---|---|---|---|---|---|
+| **`no_eval_gate` (Naive Direct Ship)** | Push prompt edits straight to live traffic (`t=40s`) | None | `420 ms` TTFT | `540,275 UC` / `76.67%` acc | **FAIL** (Accuracy `&lt; 90%` after `t=40s`) |
+| **`inline_eval_proxy` (Sync Judge)** | Run LLM-as-a-Judge inline on every user request | Live judge proxy | `2,370 ms` TTFT | `760,275 UC` / `94.0%` acc | **FAIL** (TTFT `&gt; 2s` &amp; Cost `&gt; 630k UC`) |
+| **`promptfoo`** | YAML test matrix CLI + rubric assertions | Node CLI / transitive deps | Out-of-band CLI | CI/CD gate | External runner |
+| **`ragas`** | Faithfulness, Context Recall &amp; Relevance metrics | Python + LLM calls | Out-of-band batch | Dataset scoring | Python stack |
+| **`deepeval`** | Pytest LLM assertions &amp; G-Eval rubrics | Python + Pytest | Out-of-band CI | Suite assertions | Python stack |
+| **`@kido/ai-stream/eval-gate`** | **Property Graders + Price/SKU Grounding + Cohen Kappa + `pass^k` + `OfflineEvalGate`** | **0 dependencies, pure TS (`&lt;1ms` grade)** | **`420 ms` TTFT (`0ms` eval overhead)** | **`542,218 UC` (`0.5422¢`) / `94.0%` acc** | **PASSED (3-Star Record, `BLOCK_RELEASE` at `t=40s`)** |
+
+### 8. Level 19 Boss Fight (`ai_feature_launch`): Full-Stack AI Production Delivery (`src/structured-launch/`)
+- `parsePartialJson<T>(rawBuffer)` & `StreamingProductCardExtractor<TCard>`: Zero-dependency streaming JSON lexer stripping ` ```json ` fences, handling escaped quotes and Vietnamese diacritics, dropping incomplete trailing keys/colons/commas, auto-closing strings and `{`/`[` containers in LIFO order, and emitting product cards progressively as each `{...}` closes.
+- `validateStrictJsonPayload<T>(payload, schema)` & `ValidatedSemanticCacheGate<TPayload>`: Enforces strict runtime JSON schema + finite number checks at cache boundaries—blocking malformed/NaN payloads before write (`writeBlockedInvalidJson`), evicting corrupt entries on read (`readEvictedInvalidJson`), and isolating commerce entity fingerprints so `"size M"` never hits `"size L"`.
+- `formatSseWaitingFrame`, `parseSseWaitingFrame`, `createRateGuardWaitingBridge`, & `streamWithWaitingFeedback`: Immediately flushes `event: waiting\ndata: {...}\n\n` SSE frames whenever upstream `onRetry(attempt, delayMs, reason)` fires from `@kido/ai-stream/rpm-rate-guard`, without duplicating backoff math.
+- `simulateLevel19AiFeatureLaunch(options?)`: Deterministic GonnaCrash World 3 Level 19 Boss-Fight verifier proving all 5 failure modes (`small_model`, `free_text_json`, `no_semantic_cache`, `loose_semantic_cache`, `no_backoff_retry`) fail SLA while `three_star_launch` achieves `100%` answered (`&gt;= 99.9%`), `310ms` TTFT (`&lt;= 2,000ms`), `96.25%` accuracy (`&gt;= 94%`), and exact `355,785 UC` (`0.3558¢/task &lt;= 410,000 UC`).
+
+```mermaid
+flowchart TD
+    U["Users (product_card · Livestream Spike 60s-120s)"] -->|"http + SSE"| APP["App Server (retry: backoff -> event: waiting)"]
+    APP -->|"strict schema + entity match"| VSC["ValidatedSemanticCacheGate (strict · size M != size L)"]
+    VSC -.->|"miss (valid JSON write gate)"| LLM["LLM Provider (openai_mid · json_schema · stream=True)"]
+    LLM -->|"partial JSON chunks"| EXT["StreamingProductCardExtractor + parsePartialJson"]
+```
+
+#### Level 19 Benchmark &amp; OSS Delivery Comparison
+
+| Strategy / Production System | Mechanism | Dependencies &amp; Streaming | Cache &amp; Retry Protection | Cost / SLA (Level 19) | Verdict |
+|---|---|---|---|---|---|
+| **`small_model` / `free_text_json`** | Cheap model or unguarded free-text JSON | `240–330 ms` TTFT | `86.0%` acc or `94.38%` broken-JSON drops | `142k` / `355.8k UC` | **FAIL** (Accuracy `&lt; 94%` or Answered `&lt; 99.9%`) |
+| **`no_semantic_cache` / `loose` / `no_backoff`** | Missing cache, loose `0.78`, or `retry: none` | `220–390 ms` TTFT | Budget blowup, `size M/L` collision, or `429` drops | `642.8k` / `285k` / `355.8k UC` | **FAIL** (`&gt; 410k UC`, `&lt; 94%`, or `&lt; 99.9%`) |
+| **Shopify Storefront AI** | Edge semantic cache + Zod strict write validation | Edge cache + Zod | Blocks malformed/corrupt cache writes | Storefront pattern | Industry reference |
+| **Vercel AI SDK** | Streaming object parser + retry UI feedback bridge | `@ai-sdk/*` bundle | Surfaces rate-limit wait states to client | Client SDK | Industry reference |
+| **Perplexity Product Cards** | Progressive partial JSON parser rendering cards early | Proprietary stack | Immediate card skeleton rendering | Low-TTFT UX | Industry reference |
+| **`@kido/ai-stream/structured-launch`** | **Partial JSON Lexer + `ValidatedSemanticCacheGate` + `event: waiting` Bridge** | **0 dependencies, pure TS (`310 ms` TTFT)** | **Write-block + read-evict + `size M/L` lock + `onRetry` SSE** | **`355,785 UC` (`0.3558¢`)** | **PASSED (3-Star Record · 100% / 96.25%)** |
+
+### 9. Level 20 (`poisoned_chat_text`): Dual-Layer Permissive Guardrail Cascade & Canary Shield (`src/rag-security-guard/`)
+- **Why Orthogonal Dual-Layer Permissive Wins**: Running a single fast guard leaks forum-bypass semantic/roleplay attacks (`1.33% > 0.1%`), duplicating the identical guard fails both `single_guard` diversity and shared blind spots, and cranking thresholds to `strict` causes `false_positive_blocks` that drop answered recall to `97.0% < 99.0%`.
+- **Defense-in-Depth Flow (`46,622 UC` Exact Breakdown)**: `Jev Fast Guard [1,050 UC] + Orthogonal Semantic Judge [18,283 UC] + openai_small + Canary [27,289 UC] = 46,622 UC` (`<= 54,000 UC` budget), paired with `CanaryStreamKillSwitch` (`canaryToken.length + 8` sliding holdback) so mid-stream prompt leaks abort with `0` leaked characters.
+
+```mermaid
+flowchart TD
+    U["Public Chat Input (300s @ 4 req/s · 1% Baseline + 3% Forum Bypass)"] --> L1["Layer 1: Fast Jev Guard (1,050 UC · NFKC + ZWSP + Base64/Hex/URL · Permissive)"]
+    L1 -- "Direct / Obfuscated Override" --> R1["Safe Refusal (18,283 UC Judge Saved)"]
+    L1 -- "Allowed" --> L2["Layer 2: Orthogonal Semantic Judge (18,283 UC · Roleplay / Translation Exfil / Tag Spoof)"]
+    L2 -- "Forum Bypass / Jailbreak" --> R2["Safe Refusal (0.0% Leak · 100% Benign Recall)"]
+    L2 -- "Allowed (0% False Positives)" --> LLM["openai_small + System Canary Token (27,289 UC)"]
+    LLM --> KS["CanaryStreamKillSwitch (Holdback: canaryToken.length + 8 chars · Raw/Case/Spaced/Base64)"]
+    KS -- "Canary Split-Chunk Match" --> R3["Mid-Stream Abort + Safe Refusal (0 Leaked Chars)"]
+    KS -- "Clean SSE Tokens" --> OUT["Streamed CommerceCopilot Answer (46,622 UC Total)"]
+```
+
+#### Level 20 Benchmark &amp; Defense-in-Depth Comparison
+
+| Strategy / System | Mechanism | Canary &amp; Obfuscation Protection | False Positives &amp; Leak % | Cost / Task (Level 20 `<= 54k UC`) | SLA Verdict |
+|---|---|---|---|---|---|
+| **`unguarded` / `single_jev_permissive`** | No guard or single Layer 1 permissive guard | Direct only (misses semantic forum bypasses) | `2.42%` / `1.33%` leak | `27,289` / `28,339 UC` | **FAIL** (Leak `&gt; 0.1%`) |
+| **`duplicate_jev_permissive`** | Two identical Layer 1 checkers in series | Shared blind spots; violates `single_guard` | `1.33%` leak (`orthogonalGuards: false`) | `29,389 UC` | **FAIL** (`single_guard` + Leak) |
+| **`strict_policy_guard`** | Aggressive `strict` threshold across keywords | High recall on attacks | `97.0%` answered (`36` `false_positive_blocks`) | `46,622 UC` | **FAIL** (Answered `&lt; 99%`) |
+| **Meta Llama Guard** | Safety classifier model checking input/output turns | Neural policy classification | External GPU / hosted API | Inference per turn | Industry reference |
+| **Braintrust Canary** | Canary prompt tokens + post-generation leak evals | Token-based prompt-leak detection | Evaluation &amp; tracing hooks | Managed / SDK eval | Industry reference |
+| **Anthropic Constitutional Classifiers** | Multi-stage classifier + synthetic jailbreak hardening | Constitutional rubric input/output guard | Hosted classifier latency/compute | Classifier overhead | Industry reference |
+| **`@kido/ai-stream/rag-security-guard`** | **Orthogonal `DualLayerGuardrailCascade` (`permissive`) + `CanaryStreamKillSwitch`** | **NFKC/ZWSP/B64/Hex/URL + Raw/Case/Spaced/B64 SSE holdback (`0` leaked chars)** | **`0.00%` leak · `100.0%` answered (`0` false positives)** | **`46,622 UC` (`1,050 + 18,283 + 27,289`)** | **PASSED (3-Star Record · 820 ms)** |
 
 ---
 
@@ -412,20 +493,25 @@ Verified against the **GonnaCrash World 3 (Level 02 & Level 03)** benchmarks:
 # Install directly via Kido Bag CLI
 npx kido-bag add sse-protocol
 npx kido-bag add rpm-rate-guard
+npx kido-bag add rag-security-guard
 npx kido-bag add model-router
+npx kido-bag add eval-gate
+npx kido-bag add structured-launch
 ```
 
   </Tab>
   <Tab value="Surgical Slice Extraction">
 
 ```bash
-# Extract only the edge headers, SSE protocol, rate guard, RAG security guard, and model router
+# Extract only the edge headers, SSE protocol, rate guard, RAG security guard, model router, eval gate, and structured launch
 mkdir -p src/lib/ai-stream
 cp packages/ai-stream/src/edge-flush-headers.ts src/lib/ai-stream/
 cp packages/ai-stream/src/sse-protocol.ts src/lib/ai-stream/
 cp -r packages/ai-stream/src/rpm-rate-guard/ src/lib/ai-stream/rpm-rate-guard/
 cp -r packages/ai-stream/src/rag-security-guard/ src/lib/ai-stream/rag-security-guard/
 cp -r packages/ai-stream/src/model-router/ src/lib/ai-stream/model-router/
+cp -r packages/ai-stream/src/eval-gate/ src/lib/ai-stream/eval-gate/
+cp -r packages/ai-stream/src/structured-launch/ src/lib/ai-stream/structured-launch/
 ```
 
   </Tab>
